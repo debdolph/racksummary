@@ -1,6 +1,6 @@
 #!/usr/bin/php
 <?php
-// delete the shebang on top of file to execute this script on a webserver
+// delete the shebang on top to execute this script on a webserver
 
 /*
  * RackSummary Project
@@ -9,7 +9,7 @@
  * and creates a PDF output which displays the mounting positions of
  * units/systems in a rack.
  *
- * Copyright (c) 2011 Armin Pech
+ * Copyright (c) 2011 Armin Pech, Duesseldorf, Germany.
  *
  *
  * This file is part of RackSummary.
@@ -28,12 +28,12 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Last Update: 2011-05-25
+ * Last Update: 2011-10-22
  *
  * Website: http://projects.arminpech.de/racksummary/
  */
 
-// if you use a brwoser to call this script,
+// if you use a web browser to call this script,
 // you may want to get the errors in plain text:
 //header('Content-Type: text/plain');
 
@@ -57,8 +57,10 @@ $rc->add_excel_worksheet('var/example.xls');
 // set required columns with unit data and activate color processing
 $rc->handle_excel_columns(1, 2, 7, 3, 4, 5, 6)->handle_excel_process_colors(true);
 // $rc->handle_excel_columns(<<name>>, <<rack>>, <<type>>, <<site>>, <<height>>, <<position>>, <<customer>>, <<color>>);
-// select only units which names contain '01' -- this (/<<regexp>>/) is handled as a regexp!
-//$rc->handle_excel_name_prefix('/01/');
+// select only units which names ends with 'db' -- this (/<<regexp>>/[i]) is handled as a regexp
+//$rc->handle_excel_name_prefix('/db$/');
+// search case-insensitive with regexp
+//$rc->handle_excel_name_prefix('/.*srv[0-9]*/i');
 // and here is an example for a normal name prefix ;)
 //$rc->handle_excel_name_prefix('s');
 
@@ -89,21 +91,26 @@ $rp->handle_rack_location('Babiel GmbH Co-Location');
 // set height of rack in HE/Units
 $rp->handle_rack_height('47he');
 // set header height description
-$rp->handle_rack_height_description('rack height (in rack units)');
+$rp->handle_rack_height_description('rack units');
 // set rack width in inch
 $rp->handle_rack_width(19);
 // set description of rack front
-$rp->handle_rack_front_description('front site');
+$rp->handle_rack_front_description('front side');
 // set description of rack back site
-$rp->handle_rack_back_description('back site');
+$rp->handle_rack_back_description('back side');
 // set rack front site identifier string
 $rp->handle_rack_front_identifier('front');
 // set rack back site identifier string
 $rp->handle_rack_front_identifier('front');
+// set fixed unit description width in per cent (not recommended)
+//$rp->handle_pdf_rack_description_width(30);
+// hide hole count on right rack side
+//$rp->handle_pdf_display_hole_count(false);
 // set last update string
 $rp->handle_pdf_last_update_string('Date of creation');
 // display last update date and time
-//$rp->handle_pdf_display_last_update(true);
+$rp->handle_timezone('Europe/Berlin');
+$rp->handle_pdf_display_last_update(true);
 //$rp->handle_pdf_display_last_update_time(true);
 
 // set output file

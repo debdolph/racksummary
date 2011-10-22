@@ -7,7 +7,7 @@
  * and creates a PDF output which displays the mounting positions of
  * units/systems in a rack.
  *
- * Copyright (c) 2011 Armin Pech
+ * Copyright (c) 2011 Armin Pech, Duesseldorf, Germany.
  *
  *
  * This file is part of RackSummary.

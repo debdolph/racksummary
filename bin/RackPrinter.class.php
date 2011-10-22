@@ -7,7 +7,7 @@
  * and creates a PDF output which displays the mounting positions of
  * units/systems in a rack.
  *
- * Copyright (c) 2011 Armin Pech
+ * Copyright (c) 2011 Armin Pech, Duesseldorf, Germany.
  *
  *
  * This file is part of RackSummary.
@@ -26,18 +26,15 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 2011-05-25-alpha
- * Last Update: 2011-05-25
+ * Version: 2011-10-22-alpha
+ * Last Update: 2011-10-22
  *
  * Website: http://projects.arminpech.de/racksummary/
  *
  *
  * TODO1: tune algorithm for scaling racks with wide unit descriptions
- * TODO2: setup some customization functions (height types)
- * TODO3: implement a real module concept
- * TODO4: full UTF-8 support
- * TODO5: write unit overlapping detection function
- * TODO6: check if font family is available
+ * TODO2: write unit overlapping detection function
+ * TODO3: check if font family is available
  */
 
 // set include path to applications base dir, means ../
@@ -53,30 +50,33 @@ require_once('fpdf/fpdf.php');
 
 class RackPrinter extends RackUtils {
 	/*** !!! DO NOT CHANGE THESE CLASS ATTRIBUTES OR FUNCTIONS BELOW !!! ***/
-	/*** program control attributes ***/
-	// application version number -- should not be set on your own
-	private $program_version='2011-05-25-alpha';
-	// if you want to get the output automatically
+	/*** program control attributes -- NOT CHANGEABLE ***/
+	// Application version number -- MUST NOT not be set on your own!
+	private $program_version='2011-10-22-alpha';
+	// Indicates if you want to get the output automatically.
 	private $program_auto_output=true;
-	// fpdf writer api holder
+	// fpdf writer api saving point
 	private $program_writer=null;
-	// module memory space
+	// Module saving space
 	private $program_modules=array();
-	// min. font size
+	// Minumum font size
 	private $program_min_font_size=4;
-	// scaling unit for inch to mm
+	// Scaling unit for inch to mm
 	private $program_inch_mm=25.4;
-	// scaling unit for pt to mm
+	// Scaling unit for pt to mm
 	private $program_pt_mm=0.3527;
 
 	/*** internal & mostly static attributes ***/
-	// available height formats & types for height parsing function
+	// Indicator for default mount count of a unit (1==3mh; 1==1u) / changeable
+	// Rack printer expects unit heights in he/u counts by default.
+	private $program_default_unit_height_mounts=3;
+	// Available height formats & types for height parsing function.
 	// array('<<height type>>'=><<height in mounting holes>>)
-	// he=Hoeheneinheiten, u=unit, ru=rack unit; be=Befestigungseinheiten, mh=mounting holes
-	// ONLY THESE TYPES/THIS VARIBALE CAN BE CHANGED IF NEEDED
-	private $program_available_height_types=array('he'=>3, 'u'=>3, 'ru'=>3, 'be'=>1, 'mh'=>1);
-	// dynamically on interpretation time set regular expression for height parsing function (see constructor)
-	// you must not set this attribute manually!
+	// he==Hoeheneinheiten, u==unit, ru==rack units; be==Befestigungseinheiten, fu==fixing units, mh==mounting holes
+	// ONLY THESE TYPES/THIS VARIBALE CAN BE CHANGED IF NEEDED!!!
+	private $program_available_height_types=array('he'=>3, 'u'=>3, 'ru'=>3, 'be'=>1, 'fu'=>1, 'mh'=>1);
+	// Dynamically on interpretation time set regular expression for height parsing function (see constructor).
+	// You MUST !NOT! set this attribute manually!!!
 	private $program_regexp_height_types='';
 	// available output formats, values for dynamically pdf scaling
 	private $program_output_scalar=array('a5'=>0.5, 'a4'=>1, 'a3'=>2);
@@ -219,7 +219,7 @@ class RackPrinter extends RackUtils {
 			$this->err_exit(21, 'wrong height found: "'.$height.'"');
 		}
 		if(is_numeric($height) && (int)$height>0) {
-			return $height;
+			return $height*$this->program_default_unit_height_mounts;
 		}
 		// prepare height string as array with number and unit
 		$height=explode(' ', preg_replace('/^([0-9]*)'.$this->program_regexp_height_types.'/', '$1 $2', str_replace(' ', '', $height)));
@@ -235,19 +235,32 @@ class RackPrinter extends RackUtils {
 		$this->err_exit(23, 'wrong height calculated: "'.$height.'"');
 	}
 
-	// *get* scale for inch to mm
+	// *get* scaling for inch to mm
 	public function handle_inch_mm() {
 		return $this->program_inch_mm;
 	}
 
-	// *get* scale for pt to mm
+	// *get* scaling for pt to mm
 	public function handle_pt_mm() {
 		return $this->program_pt_mm;
 	}
 
 
 	/***** attribute handler functions *****/
+	/*** rack printer ***/
+	public function handle_default_unit_height_mounts($value=null) {
+		if($value!==null) {
+			if(!int($value)>0) {
+				$this->err_exit(54, 'expected integer , but found "'.$value.'"');
+			}
+			$this->program_default_unit_height_mounts=int($value);
+			return $this;
+		}
+		return $this->program_default_unit_height_mounts;
+	}
+
 	/*** rack information ***/
+	// rack name
 	public function handle_rack_name($value=null) {
 		if($value!==null) {
 			if(!strlen($value)>0) {
@@ -259,6 +272,7 @@ class RackPrinter extends RackUtils {
 		return $this->rack_name;
 	}
 
+	// rack description
 	public function handle_rack_description($value=null) {
 		if($value!==null) {
 			if(!strlen($value)>0) {
@@ -270,6 +284,7 @@ class RackPrinter extends RackUtils {
 		return $this->rack_description;
 	}
 
+	// rack height in mount holes, units or something else
 	public function handle_rack_height($value=null) {
 		if($value!==null) {
 			$this->rack_height=$this->parse_height($value);
@@ -278,6 +293,7 @@ class RackPrinter extends RackUtils {
 		return $this->rack_height;
 	}
 
+	// rack height description text
 	public function handle_rack_height_description($value=null) {
 		if($value!==null) {
 			if(!strlen($value)>0) {
@@ -289,6 +305,7 @@ class RackPrinter extends RackUtils {
 		return $this->rack_height_description;
 	}
 
+	// rack width in inch
 	public function handle_rack_width($value=null) {
 		if($value!==null) {
 			if(!((int)$value>0)) {
@@ -300,6 +317,7 @@ class RackPrinter extends RackUtils {
 		return $this->rack_width;
 	}
 
+	// rack real location
 	public function handle_rack_location($value=null) {
 		if($value!==null) {
 			if(!strlen($value)>0) {
@@ -311,6 +329,7 @@ class RackPrinter extends RackUtils {
 		return $this->rack_location;
 	}
 
+	// rack front side description text
 	public function handle_rack_front_description($value=null) {
 		if($value!==null) {
 			if(!strlen($value)>0) {
@@ -322,6 +341,7 @@ class RackPrinter extends RackUtils {
 		return $this->rack_front_description;
 	}
 
+	// rack back side description text
 	public function handle_rack_back_description($value=null) {
 		if($value!==null) {
 			if(!strlen($value)>0) {
@@ -333,6 +353,7 @@ class RackPrinter extends RackUtils {
 		return $this->rack_back_description;
 	}
 
+	// rack front identifier string
 	public function handle_rack_front_identifier($value=null) {
 		if($value!==null) {
 			if(!strlen($value)>0) {
@@ -344,6 +365,7 @@ class RackPrinter extends RackUtils {
 		return $this->rack_front_identifier;
 	}
 
+	// rack back identifier string
 	public function handle_rack_back_identifier($value=null) {
 		if($value!==null) {
 			if(!strlen($value)>0) {
@@ -409,6 +431,7 @@ class RackPrinter extends RackUtils {
 		return $this->pdf_keywords;
 	}
 
+	// set PDF creator string to programs configuration
 	private function handle_pdf_creator($value=null) {
 		if($value!==null) {
 			if(!strlen($value)>0) {
@@ -420,6 +443,7 @@ class RackPrinter extends RackUtils {
 		return $this->pdf_creator;
 	}
 
+	// PDF margins in mm
 	public function handle_pdf_margins($value=null) {
 		if($value!==null) {
 			if(!((int)$value>=0)) {
@@ -441,7 +465,7 @@ class RackPrinter extends RackUtils {
 
 	public function handle_pdf_font_family($value=null) {
 		if($value!==null) {
-			// TODO5: check if font family is available
+			// TODO3: check if font family is available
 			if(!strlen($value)>0) {
 				$this->err_exit(38, 'no font family name found');
 			}
@@ -462,6 +486,7 @@ class RackPrinter extends RackUtils {
 		return $this->pdf_font_size;
 	}
 
+	// scaling unit to compute rack printing
 	private function handle_pdf_rack_scalar($value=null) {
 		if($value!==null) {
 			$value=(double)$value;
@@ -499,12 +524,25 @@ class RackPrinter extends RackUtils {
 		return $this->pdf_display_hole_count;
 	}
 
+	// handle timezone for date printing
+	public function handle_timezone($value=null) {
+		if($value!==null) {
+			if(!@date_default_timezone_set((string)$value)) {
+				$this->err_exit(55, 'Timezone identifier "'.$value.'" is not available');
+			}
+			return $this;
+		}
+		return date_default_timezone_get();
+	}
+
 	public function handle_pdf_display_last_update($value=null) {
 		if($value!==null) {
-			if($value) {
+			if($value===true) {
 				$this->pdf_display_last_update=true;
 			}
-			$this->pdf_display_last_update=false;
+			else {
+				$this->pdf_display_last_update=false;
+			}
 			return $this;
 		}
 		return $this->pdf_display_last_update;
@@ -523,7 +561,7 @@ class RackPrinter extends RackUtils {
 
 	public function handle_pdf_display_last_update_time($value=null) {
 		if($value!==null) {
-			if($value) {
+			if($value===true) {
 				$this->pdf_display_last_update_time=true;
 			}
 			else {
@@ -767,7 +805,7 @@ class RackPrinter extends RackUtils {
 				$image_width=$image_width*$max_image_height/$image_height;
 				$image_height=$max_image_height;
 			}
-			$this->writer()->Image($this->handle_pdf_header_image(), (int)$this->writer()->CurPageFormat[0]-(int)$this->writer()->lMargin-$image_width, $this->handle_pdf_margins()*0.8, $image_width, $image_height);
+			$this->writer()->Image($this->handle_pdf_header_image(), (int)$this->writer()->CurPageSize[0]-(int)$this->writer()->lMargin-$image_width, $this->handle_pdf_margins()*0.8, $image_width, $image_height);
 		}
 		// print last update = today
 		if($this->handle_pdf_display_last_update()) {
@@ -775,14 +813,17 @@ class RackPrinter extends RackUtils {
 			if($this->handle_pdf_display_last_update_time()) {
 				$last_update.=' (H:i)';
 			}
-			$this->writer()->Text((int)$this->writer()->lMargin, (int)$this->writer()->CurPageFormat[1]-(int)$this->writer()->tMargin, $this->handle_pdf_last_update_string().': '.date($last_update));
+			$this->writer()->Text((int)$this->writer()->lMargin, (int)$this->writer()->CurPageSize[1]-(int)$this->writer()->tMargin, $this->handle_pdf_last_update_string().': '.date($last_update));
 		}
 		// calculate description width
 		$description_width=0;
 		$longest_string='';
+		// set fixed description width
 		if($this->handle_pdf_rack_description_width()!==null) {
-			$description_width=((int)$this->writer()->CurPageFormat[0]-$this->writer()->lMargin*2)*$this->handle_pdf_rack_description_width()/100/2;
+			$description_width=((int)$this->writer()->CurPageSize[0]-$this->writer()->lMargin*2)*$this->handle_pdf_rack_description_width()/100/2;
+			$description_width=((int)$this->writer()->CurPageSize[0]-$this->writer()->lMargin*2)*$this->handle_pdf_rack_description_width()/100/2;
 		}
+		// calculate dynamic description width (default)
 		else {
 			foreach($this->get_unit() as $unit) {
 				$string_width=(int)$this->writer()->GetStringWidth($unit->handle_name());
@@ -796,22 +837,12 @@ class RackPrinter extends RackUtils {
 			$longest_string.='OOi';
 		}
 		// set rack/unit scalar (inch -> mm)
-		$rack_inch_scalar=($this->writer()->CurPageFormat[1]-$this->handle_pdf_margins()*2-9*$this->handle_pdf_font_size()*$this->handle_pt_mm())/($this->handle_rack_height()+3)*1.72;
-		// avoid page rack overflow
-		$max_rack_width=$this->writer()->CurPageFormat[0]/2-$this->handle_pdf_margins()-$description_width;
-		$rack_width=$this->handle_rack_width()*$rack_inch_scalar;
-		if($rack_width>$max_rack_width) {
-			$rack_inch_scalar*=$max_rack_width/$rack_width;
-			$description_width*=$max_rack_width/$rack_width*0.9;
-		}
-		else {
-			$description_width*=$rack_width/$max_rack_width*0.85;
-		}
+		$rack_inch_scalar=($this->writer()->CurPageSize[1]-$this->handle_pdf_margins()*2-9*$this->handle_pdf_font_size()*$this->handle_pt_mm())/($this->handle_rack_height()+3)*1.72;
 		$this->handle_pdf_rack_scalar($rack_inch_scalar);
 		// set rack positions
 		$rack_margin_top=$this->writer()->GetY()+$this->handle_pdf_font_size()/2;
-		$rack_front_margin_left=$this->writer()->lMargin+$description_width;
-		$rack_back_margin_left=(int)$this->writer()->CurPageFormat[0]/2+$description_width;
+		$rack_front_margin_left=$this->writer()->lMargin+$description_width-$description_width/2;
+		$rack_back_margin_left=(int)$this->writer()->CurPageSize[0]/2+$description_width-$description_width/2;
 		// print rack sites
 		$this->print_site($this->handle_rack_front_description(), $rack_margin_top, $rack_front_margin_left);
 		$this->print_site($this->handle_rack_back_description(), $rack_margin_top, $rack_back_margin_left);

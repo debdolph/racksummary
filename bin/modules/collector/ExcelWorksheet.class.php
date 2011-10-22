@@ -7,7 +7,7 @@
  * and creates a PDF output which displays the mounting positions of
  * units/systems in a rack.
  *
- * Copyright (c) 2011 Armin Pech
+ * Copyright (c) 2011 Armin Pech, Duesseldorf, Germany.
  *
  *
  * This file is part of RackSummary.
@@ -26,7 +26,7 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Last Update: 2011-03-07
+ * Last Update: 2011-10-22
  *
  * Website: http://projects.arminpech.de/racksummary/
  *
@@ -262,14 +262,14 @@ class ExcelWorksheet extends RackUtils {
 			$name_prefix=$this->handle_excel_name_prefix();
 			if(strlen($name_prefix)>0) {
 				// check with prefix
-				if($name_prefix[0]=='/' && $name_prefix[strlen($name_prefix)-1]=='/') {
+				if($name_prefix[0]=='/' && ($name_prefix[strlen($name_prefix)-1]=='/' || $name_prefix[strlen($name_prefix)-2].$name_prefix[strlen($name_prefix)-1]=='/i')) {
 					if(!preg_match($name_prefix, $unit_name)) {
 						$check_unit_prefix=false;
 					}
 				}
 				// normal string comparation
 				else {
-					if(substr($unit_name, 0, strlen($name_prefix))!=$name_prefix) {
+					if(substr($unit_name, 0, strlen($name_prefix)-1)!=$name_prefix) {
 						$check_unit_prefix=false;
 					}
 				}

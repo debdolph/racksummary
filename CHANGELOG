@@ -1,0 +1,18 @@
+CHANGELOG of RackSummary
+========================
+Last update: 2011-10-23
+
+
+2011-10-22 armin
+* Improvement rack scaling algorithm
+* Bugfixes of some printing functions and pdf output controll functions
+* Upgrade usage of FPDF from version 1.6 to 1.7 and adjustment to new version and internal variables
+* Added new available height types
+* Added functions for better customization
+* Added facility to set/change default timezone of PHP for program runtime
+
+2011-10-23 armin
+* Added CHANGELOG for tracking
+* Functions of RackPrinter trusts their input any more via Type Casting
+* Documentation and examples of available function of RackPrinter in RackSummary.cli.php
+* Added functions for better customization

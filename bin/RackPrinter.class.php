@@ -26,8 +26,8 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 2011-10-22-alpha
- * Last Update: 2011-10-22
+ * Version: 2011-10-23-alpha
+ * Last Update: 2011-10-23
  *
  * Website: http://projects.arminpech.de/racksummary/
  *
@@ -52,7 +52,7 @@ class RackPrinter extends RackUtils {
 	/*** !!! DO NOT CHANGE THESE CLASS ATTRIBUTES OR FUNCTIONS BELOW !!! ***/
 	/*** program control attributes -- NOT CHANGEABLE ***/
 	// Application version number -- MUST NOT not be set on your own!
-	private $program_version='2011-10-22-alpha';
+	private $program_version='2011-10-23-alpha';
 	// Indicates if you want to get the output automatically.
 	private $program_auto_output=true;
 	// fpdf writer api saving point
@@ -133,6 +133,8 @@ class RackPrinter extends RackUtils {
 	private $pdf_rack_description_width=null;
 	// status attribute for displaying hole count or not
 	private $pdf_display_hole_count=true;
+	// hole count interval for rack sides
+	private $pdf_hole_count_interval=5;
 	// status if you like to display last update string
 	private $pdf_display_last_update=true;
 	// customized last update prefix string
@@ -250,8 +252,9 @@ class RackPrinter extends RackUtils {
 	/*** rack printer ***/
 	public function handle_default_unit_height_mounts($value=null) {
 		if($value!==null) {
-			if(!int($value)>0) {
-				$this->err_exit(54, 'expected integer , but found "'.$value.'"');
+			$value=(int)$value;
+			if(!$value>0) {
+				$this->err_exit(54, 'expected integer value greater than 0, but found "'.$value.'"');
 			}
 			$this->program_default_unit_height_mounts=int($value);
 			return $this;
@@ -263,6 +266,7 @@ class RackPrinter extends RackUtils {
 	// rack name
 	public function handle_rack_name($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(24, 'no rack name found');
 			}
@@ -275,6 +279,7 @@ class RackPrinter extends RackUtils {
 	// rack description
 	public function handle_rack_description($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(25, 'no rack description found');
 			}
@@ -296,6 +301,7 @@ class RackPrinter extends RackUtils {
 	// rack height description text
 	public function handle_rack_height_description($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(26, 'no rack height description found');
 			}
@@ -308,8 +314,9 @@ class RackPrinter extends RackUtils {
 	// rack width in inch
 	public function handle_rack_width($value=null) {
 		if($value!==null) {
-			if(!((int)$value>0)) {
-				$this->err_exit(27, 'wrong width "'.$value.'"');
+			$value=(int)$value;
+			if(!$value>0) {
+				$this->err_exit(27, 'wrong width "'.$value.'"; value must be an integer greater than 0');
 			}
 			$this->rack_width=$value;
 			return $this;
@@ -320,6 +327,7 @@ class RackPrinter extends RackUtils {
 	// rack real location
 	public function handle_rack_location($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(28, 'no location found');
 			}
@@ -332,6 +340,7 @@ class RackPrinter extends RackUtils {
 	// rack front side description text
 	public function handle_rack_front_description($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(29, 'no rack description found');
 			}
@@ -344,6 +353,7 @@ class RackPrinter extends RackUtils {
 	// rack back side description text
 	public function handle_rack_back_description($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(30, 'no rack description found');
 			}
@@ -356,6 +366,7 @@ class RackPrinter extends RackUtils {
 	// rack front identifier string
 	public function handle_rack_front_identifier($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(51, 'no rack identifier found');
 			}
@@ -368,6 +379,7 @@ class RackPrinter extends RackUtils {
 	// rack back identifier string
 	public function handle_rack_back_identifier($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(52, 'no rack identifier found');
 			}
@@ -380,6 +392,7 @@ class RackPrinter extends RackUtils {
 	/*** PDF information ***/
 	public function handle_pdf_author($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(31, 'no pdf author found');
 			}
@@ -391,6 +404,7 @@ class RackPrinter extends RackUtils {
 
 	public function handle_pdf_title($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(32, 'no pdf title found');
 			}
@@ -402,6 +416,7 @@ class RackPrinter extends RackUtils {
 
 	public function handle_pdf_subject($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(33, 'no pdf subject found');
 			}
@@ -434,6 +449,7 @@ class RackPrinter extends RackUtils {
 	// set PDF creator string to programs configuration
 	private function handle_pdf_creator($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(36, 'no pdf creator found');
 			}
@@ -446,8 +462,9 @@ class RackPrinter extends RackUtils {
 	// PDF margins in mm
 	public function handle_pdf_margins($value=null) {
 		if($value!==null) {
-			if(!((int)$value>=0)) {
-				$this->err_exit(37, 'margins for PDF page must be an integer and greater or equal than 0, but "'.$value.'" found');
+			$value=(double)$value;
+			if(!$value>0) {
+				$this->err_exit(37, 'margins for PDF page must be an double value and greater or equal than 0, but "'.$value.'" found');
 			}
 			$this->pdf_margins=$value;
 			return $this;
@@ -466,6 +483,7 @@ class RackPrinter extends RackUtils {
 	public function handle_pdf_font_family($value=null) {
 		if($value!==null) {
 			// TODO3: check if font family is available
+			$value=(string)$value;
 			if(!strlen($value)>0) {
 				$this->err_exit(38, 'no font family name found');
 			}
@@ -477,8 +495,9 @@ class RackPrinter extends RackUtils {
 
 	public function handle_pdf_font_size($value=null) {
 		if($value!==null) {
-			if(!((int)$value>$this->program_min_font_size)) {
-				$this->err_exit(39, 'please use a font size greater than '.$this->program_min_font_size);
+			$value=(double)$value;
+			if($value<$this->program_min_font_size) {
+				$this->err_exit(39, 'please use a font size double value greater than '.$this->program_min_font_size);
 			}
 			$this->pdf_font_size=$value;
 			return $this;
@@ -490,8 +509,8 @@ class RackPrinter extends RackUtils {
 	private function handle_pdf_rack_scalar($value=null) {
 		if($value!==null) {
 			$value=(double)$value;
-			if(!is_double($value)) {
-				$this->err_exit(40, 'wrong size "'.$value.'" for rack scalar found, must be an integer or double value');
+			if(!$value>0) {
+				$this->err_exit(40, 'wrong size "'.$value.'" for rack scalar found, must be a double value greater than 0');
 			}
 			$this->pdf_rack_scalar=$value;
 			return $this;
@@ -502,8 +521,8 @@ class RackPrinter extends RackUtils {
 	public function handle_pdf_rack_description_width($value=null) {
 		if($value!==null) {
 			$value=(double)$value;
-			if(!is_double($value)) {
-				$this->err_exit(41, 'wrong size for rack description width: "'.$value.'", must be an integer or double value');
+			if(!$value>0) {
+				$this->err_exit(41, 'wrong size for rack description width: "'.$value.'", must be a double value greater than 0');
 			}
 			$this->pdf_rack_description_width=$value;
 			return $this;
@@ -513,7 +532,8 @@ class RackPrinter extends RackUtils {
 
 	public function handle_pdf_display_hole_count($value=null) {
 		if($value!==null) {
-			if($value) {
+			$value=(boolean)$value;
+			if($value===true) {
 				$this->pdf_display_hole_count=true;
 			}
 			else {
@@ -524,11 +544,24 @@ class RackPrinter extends RackUtils {
 		return $this->pdf_display_hole_count;
 	}
 
+	public function handle_hole_count_interval($value=null) {
+		if($value!==null) {
+			$value=(int)$value;
+			if(!$value>0) {
+				$this->err_exit(56, 'hole count interval must be an integer value greater than 0');
+			}
+			$this->pdf_hole_count_interval=$value;
+			return $this;
+		}
+		return $this->pdf_hole_count_interval;
+	}
+
 	// handle timezone for date printing
 	public function handle_timezone($value=null) {
 		if($value!==null) {
-			if(!@date_default_timezone_set((string)$value)) {
-				$this->err_exit(55, 'Timezone identifier "'.$value.'" is not available');
+			$value=(string)$value;
+			if(!@date_default_timezone_set($value)) {
+				$this->err_exit(55, 'Timezone with identifier "'.$value.'" is not available');
 			}
 			return $this;
 		}
@@ -537,6 +570,7 @@ class RackPrinter extends RackUtils {
 
 	public function handle_pdf_display_last_update($value=null) {
 		if($value!==null) {
+			$value=(boolean)$value;
 			if($value===true) {
 				$this->pdf_display_last_update=true;
 			}
@@ -550,6 +584,7 @@ class RackPrinter extends RackUtils {
 
 	public function handle_pdf_last_update_string($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!strlen($value)) {
 				$this->err_exit(42, 'wrong string found for last update string: "'.$value.'"');
 			}
@@ -561,6 +596,7 @@ class RackPrinter extends RackUtils {
 
 	public function handle_pdf_display_last_update_time($value=null) {
 		if($value!==null) {
+			$value=(boolean)$value;
 			if($value===true) {
 				$this->pdf_display_last_update_time=true;
 			}
@@ -584,6 +620,7 @@ class RackPrinter extends RackUtils {
 
 	public function handle_output_format($value=null) {
 		if($value!==null) {
+			$value=(string)$value;
 			if(!array_key_exists(strtolower($value), $this->program_output_scalar)) {
 				$this->err_exit(43, 'output format "'.$value.'" is not available');
 			}
@@ -597,6 +634,7 @@ class RackPrinter extends RackUtils {
 		if($value===null) {
 			return $this->output_destination;
 		}
+		$value=(string)$value;
 		if($value=='i' || $value=='I' || $value=='inline') {
 			$this->output_destination='I';
 		}
@@ -657,6 +695,7 @@ class RackPrinter extends RackUtils {
 		if($name===null) {
 			return $this->rack_units;
 		}
+		$name=(string)$name;
 		if(!isset($this->_rack_units[$name])) {
 			$this->err_exit(45, 'unit with name "'.$name.'" could not be found');
 		}
@@ -686,6 +725,7 @@ class RackPrinter extends RackUtils {
 
 	// check if unit placed in rack and delete it
 	public function delete_unit($name) {
+		$name=(string)$name;
 		if(array_key_exists($name, $this->rack_units)) {
 			unset($this->rack_units[$name]);
 		}
@@ -724,7 +764,6 @@ class RackPrinter extends RackUtils {
 		$this->writer()->Rect($unit_position_left, $unit_position_top, $unit_width+0.014*$this->handle_pdf_rack_scalar(), $unit_height, 'F');
 		$this->writer()->Line($rack_margin_left, $unit_position_top, $rack_margin_left+$unit_rack_width, $unit_position_top);
 		$this->writer()->Line($rack_margin_left, $unit_position_top+$unit_height, $rack_margin_left+$unit_rack_width, $unit_position_top+$unit_height);
-		// design cover of unit if function is available -- TODO
 		if($this->module('RackCoverPrinter')->handle_activation()===true) {
 			$this->module('RackCoverPrinter')->print_unit_cover($unit->handle_type(), $unit_position_top, $unit_position_left, $unit_height, $unit_width);
 		}
@@ -758,7 +797,7 @@ class RackPrinter extends RackUtils {
 			$this->writer()->Rect($margin_left+$this->handle_pdf_rack_scalar()*0.165, $margin_top+$hole_count*0.58*$this->handle_pdf_rack_scalar(), 0.25*$this->handle_pdf_rack_scalar(), 0.25*$this->handle_pdf_rack_scalar(), 'F');
 			$this->writer()->Rect($margin_left+($this->handle_rack_width()+0.745)*$this->handle_pdf_rack_scalar(), $margin_top+$hole_count*0.58*$this->handle_pdf_rack_scalar(), 0.25*$this->handle_pdf_rack_scalar(), 0.25*$this->handle_pdf_rack_scalar(), 'F');
 			// mark hole with number
-			if($this->handle_pdf_display_hole_count() && ($hole_count+1)%5==0) {
+			if($this->handle_pdf_display_hole_count() && ($hole_count+1)%$this->handle_hole_count_interval()==0) {
 				$this->writer()->Text($margin_left+($this->handle_rack_width()+0.58*2)*$this->handle_pdf_rack_scalar()+0.75, $margin_top+($hole_count+0.67)*0.58*$this->handle_pdf_rack_scalar(), $hole_count+1);
 			}
 			$hole_count++;

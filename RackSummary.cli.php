@@ -1,6 +1,6 @@
 #!/usr/bin/php
 <?php
-// delete the shebang on top to execute this script on a webserver
+// delete the shebang on top to execute this script via a webserver
 
 /*
  * RackSummary Project
@@ -28,18 +28,18 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Last Update: 2011-10-22
+ * Last Update: 2011-10-23
  *
  * Website: http://projects.arminpech.de/racksummary/
  */
 
-// if you use a web browser to call this script,
+// If you use a web browser to call this script,
 // you may want to get the errors in plain text:
 //header('Content-Type: text/plain');
 
 
 // load required classes
-// data collector class (abstract)
+// factory data collector class
 require_once('bin/RackCollector.class.php');
 // PDF output/printer class
 require_once('bin/RackPrinter.class.php');
@@ -94,6 +94,8 @@ $rp->handle_rack_height('47he');
 $rp->handle_rack_height_description('rack units');
 // set rack width in inch
 $rp->handle_rack_width(19);
+// set default height mounts for normal integer values from data source without units
+//$rp->handle_default_unit_height_mounts(1);
 // set description of rack front
 $rp->handle_rack_front_description('front side');
 // set description of rack back site
@@ -106,6 +108,8 @@ $rp->handle_rack_front_identifier('front');
 //$rp->handle_pdf_rack_description_width(30);
 // hide hole count on right rack side
 //$rp->handle_pdf_display_hole_count(false);
+// customize rack hole count interval on rack's right side
+//$rp->handle_hole_count_interval(3);
 // set last update string
 $rp->handle_pdf_last_update_string('Date of creation');
 // display last update date and time

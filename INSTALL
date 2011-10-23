@@ -1,15 +1,15 @@
 INSTALL instructions of RackSummary
 ===================================
-Last update: 2011-10-22
+Last update: 2011-10-23
 
 
 # 1. Get the newest php sources of RackSummary
 git clone https://github.com/arminpech/racksummary.git
 
 # 2. Download required APIs
-# 2.1. Get FPDF for PDF creation
+# 2.1. Get FPDF (minimum version 1.7) for PDF creation
 cd bin
-wget "http://fpdf.org/en/dl.php?v=17&f=tgz" -O fpdf.tgz
+wget 'http://fpdf.org/en/dl.php?v=17&f=tgz' -O fpdf.tgz
 tar -xzf fpdf.tgz fpdf17/fpdf.php fpdf17/font
 ln -s fpdf17 fpdf
 rm fpdf.tgz

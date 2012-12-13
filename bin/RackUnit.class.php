@@ -7,7 +7,7 @@
  * and creates a PDF output which displays the mounting positions of
  * units/systems in a rack.
  *
- * Copyright (c) 2011 Armin Pech, Duesseldorf, Germany.
+ * Copyright (c) 2011,2012 Armin Pech, Duesseldorf, Germany.
  *
  *
  * This file is part of RackSummary.
@@ -26,7 +26,7 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Last Update: 2011-03-05
+ * Last Update: 2012-12-13
  *
  * Website: http://projects.arminpech.de/racksummary/
  */
@@ -42,10 +42,11 @@ class RackUnit {
 	private $position=null;
 	private $customer=null;
 	private $color=array(null, null, null);
+	private $comment=null;
 
 
 	/*** magic functions ***/
-	public function __construct($name=null, $rack=null, $type=null, $site=null, $height=null, $position=null, $customer=null, $color=null) {
+	public function __construct($name=null, $rack=null, $type=null, $site=null, $height=null, $position=null, $customer=null, $comment=null, $color=null) {
 		$this->handle_name($name);
 		$this->handle_rack($rack);
 		$this->handle_type($type);
@@ -54,6 +55,7 @@ class RackUnit {
 		$this->handle_position($position);
 		$this->handle_customer($customer);
 		$this->handle_color($color[0], $color[1], $color[2]);
+		$this->handle_comment($comment);
 		return $this;
 	}
 
@@ -154,6 +156,14 @@ class RackUnit {
 			return $this;
 		}
 		return $this->color[2];
+	}
+
+	public function handle_comment($value=null) {
+		if($value!==null) {
+			$this->comment=$value;
+			return $this;
+		}
+		return $this->comment;
 	}
 }
 

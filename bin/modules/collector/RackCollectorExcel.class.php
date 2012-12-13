@@ -7,7 +7,7 @@
  * and creates a PDF output which displays the mounting positions of
  * units/systems in a rack.
  *
- * Copyright (c) 2011 Armin Pech, Duesseldorf, Germany.
+ * Copyright (c) 2011,2012 Armin Pech, Duesseldorf, Germany.
  *
  *
  * This file is part of RackSummary.
@@ -26,7 +26,7 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Last Update: 2011-05-07
+ * Last Update: 2012-12-13
  *
  * Website: http://projects.arminpech.de/racksummary/
  *
@@ -172,9 +172,9 @@ class RackCollectorExcel extends RackUtils implements RackCollectorProviderInter
 
 
 	/*** excel source file handler functions ***/
-	public function handle_excel_columns($name=null, $rack=null, $type=null, $site=null, $height=null, $position=null, $customer=null, $color=null, $sheets=null) {
+	public function handle_excel_columns($name=null, $rack=null, $type=null, $site=null, $height=null, $position=null, $customer=null, $comment=null, $color=null, $sheets=null) {
 		foreach($this->get_excel_worksheet($sheets) as $sheet) {
-			$sheet->handle_excel_columns($name, $rack, $type, $site, $height, $position, $customer, $color);
+			$sheet->handle_excel_columns($name, $rack, $type, $site, $height, $position, $customer, $comment, $color);
 		}
 		return $this;
 	}
@@ -238,6 +238,13 @@ class RackCollectorExcel extends RackUtils implements RackCollectorProviderInter
 	public function handle_excel_name_prefix($value=null, $sheets=null) {
 		foreach($this->get_excel_worksheet($sheets) as $sheet) {
 			$sheet->handle_excel_name_prefix($value);
+		}
+		return $this;
+	}
+
+	public function handle_excel_comment_column($value=null, $sheets=null) {
+		foreach($this->get_excel_worksheet($sheets) as $sheet) {
+			$sheet->handle_excel_comment_column($value);
 		}
 		return $this;
 	}

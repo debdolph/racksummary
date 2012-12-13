@@ -7,7 +7,7 @@
  * and creates a PDF output which displays the mounting positions of
  * units/systems in a rack.
  *
- * Copyright (c) 2011 Armin Pech, Duesseldorf, Germany.
+ * Copyright (c) 2011,2012 Armin Pech, Duesseldorf, Germany.
  *
  *
  * This file is part of RackSummary.
@@ -26,13 +26,16 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 2011-10-23-alpha
- * Last Update: 2011-10-23
+ * Version: 2012-12-13-alpha
+ * Last Update: 2012-12-13
  *
  * Website: http://projects.arminpech.de/racksummary/
  *
  *
  * TODO1: tune algorithm for scaling racks with wide unit descriptions
+ *         run over all unit names and comments to get the longest one
+ *         and calculate all rows dynamically with percent option for
+ *         rack width
  * TODO2: write unit overlapping detection function
  * TODO3: check if font family is available
  */
@@ -135,6 +138,8 @@ class RackPrinter extends RackUtils {
 	private $pdf_display_hole_count=true;
 	// hole count interval for rack sides
 	private $pdf_hole_count_interval=5;
+	// print out unit comments
+	private $pdf_display_unit_comment=false;
 	// status if you like to display last update string
 	private $pdf_display_last_update=true;
 	// customized last update prefix string
@@ -556,6 +561,19 @@ class RackPrinter extends RackUtils {
 		return $this->pdf_hole_count_interval;
 	}
 
+	public function handle_pdf_display_unit_comment($value=null) {
+		if($value!==null) {
+			$value=(boolean)$value;
+			if($value===true) {
+				$this->pdf_display_unit_comment=true;
+			}
+			else {
+				$this->pdf_display_unit_comment=false;
+			}
+		}
+		return $this->pdf_display_unit_comment;
+	}
+
 	// handle timezone for date printing
 	public function handle_timezone($value=null) {
 		if($value!==null) {
@@ -760,13 +778,24 @@ class RackPrinter extends RackUtils {
 		// print unit name
 		$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->handle_pdf_rack_scalar()*3.1);
 		$this->writer()->Text($rack_margin_left-$this->writer()->GetStringWidth($unit->handle_name())-1.3, $unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2, $unit->handle_name());
+
 		// print unit to rack
 		$this->writer()->Rect($unit_position_left, $unit_position_top, $unit_width+0.014*$this->handle_pdf_rack_scalar(), $unit_height, 'F');
 		$this->writer()->Line($rack_margin_left, $unit_position_top, $rack_margin_left+$unit_rack_width, $unit_position_top);
 		$this->writer()->Line($rack_margin_left, $unit_position_top+$unit_height, $rack_margin_left+$unit_rack_width, $unit_position_top+$unit_height);
+
+		// Optional unit decoration
 		if($this->module('RackCoverPrinter')->handle_activation()===true) {
 			$this->module('RackCoverPrinter')->print_unit_cover($unit->handle_type(), $unit_position_top, $unit_position_left, $unit_height, $unit_width);
 		}
+
+		// Add unit comment
+		if($this->handle_pdf_display_unit_comment()) {
+			$this->writer()->SetFont($this->handle_pdf_font_family(), 'I', $this->handle_pdf_rack_scalar()*3.1);
+			$this->writer()->Text($rack_margin_left+$unit_rack_width+0.5+$this->writer()->GetStringWidth('000')+0.5, $unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2, $unit->handle_comment());
+			$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->handle_pdf_rack_scalar()*3.1);
+		}
+
 		return $this;
 	}
 

@@ -7,7 +7,7 @@
  * and creates a PDF output which displays the mounting positions of
  * units/systems in a rack.
  *
- * Copyright (c) 2011 Armin Pech, Duesseldorf, Germany.
+ * Copyright (c) 2011,2012 Armin Pech, Duesseldorf, Germany.
  *
  *
  * This file is part of RackSummary.
@@ -26,7 +26,7 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Last Update: 2011-10-22
+ * Last Update: 2012-12-13
  *
  * Website: http://projects.arminpech.de/racksummary/
  *
@@ -56,6 +56,7 @@ class ExcelWorksheet extends RackUtils {
 	private $excel_color_column=null;
 	private $excel_name_prefix=null;
 	private $excel_process_colors=false;
+	private $excel_comment_column=null;
 
 
 	/*** magic functions ***/
@@ -129,7 +130,7 @@ class ExcelWorksheet extends RackUtils {
 
 	/*** excel source file handler functions ***/
 	// set all available columns
-	public function handle_excel_columns($name=null, $rack=null, $type=null, $site=null, $height=null, $position=null, $customer=null, $color=null) {
+	public function handle_excel_columns($name=null, $rack=null, $type=null, $site=null, $height=null, $position=null, $customer=null, $comment=null, $color=null) {
 		$this->handle_excel_name_column($name);
 		$this->handle_excel_rack_column($rack);
 		$this->handle_excel_type_column($type);
@@ -138,6 +139,7 @@ class ExcelWorksheet extends RackUtils {
 		$this->handle_excel_position_column($position);
 		$this->handle_excel_customer_column($customer);
 		$this->handle_excel_color_column($color);
+		$this->handle_excel_comment_column($comment);
 		return $this;
 	}
 
@@ -240,6 +242,17 @@ class ExcelWorksheet extends RackUtils {
 		return $this->excel_name_prefix;
 	}
 
+	public function handle_excel_comment_column($value=null) {
+		if($value!==null) {
+			if(!strlen($value)>0) {
+				$this->err_exit(153, 'no key for comment column found');
+			}
+			$this->excel_comment_column=$value;
+			return $this;
+		}
+		return $this->excel_comment_column;
+	}
+
 	public function handle_excel_process_colors($value=null) {
 		if($value!==null) {
 			if($value===true) {
@@ -282,7 +295,8 @@ class ExcelWorksheet extends RackUtils {
 					$this->handle_excel_reader()->val($row, $this->handle_excel_site_column(), $this->handle_excel_worksheet_index()),
 					$this->handle_excel_reader()->val($row, $this->handle_excel_height_column(), $this->handle_excel_worksheet_index()),
 					$this->handle_excel_reader()->val($row, $this->handle_excel_position_column(), $this->handle_excel_worksheet_index()),
-					$this->handle_excel_reader()->val($row, $this->handle_excel_customer_column(), $this->handle_excel_worksheet_index())
+					$this->handle_excel_reader()->val($row, $this->handle_excel_customer_column(), $this->handle_excel_worksheet_index()),
+					$this->handle_excel_reader()->val($row, $this->handle_excel_comment_column(), $this->handle_excel_worksheet_index())
 				);
 				if($this->handle_excel_process_colors()) {
 					$color=$this->handle_excel_reader()->bgColor($row, $this->handle_excel_name_column(), $this->handle_excel_worksheet_index());

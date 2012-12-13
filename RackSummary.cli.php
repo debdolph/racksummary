@@ -9,7 +9,7 @@
  * and creates a PDF output which displays the mounting positions of
  * units/systems in a rack.
  *
- * Copyright (c) 2011 Armin Pech, Duesseldorf, Germany.
+ * Copyright (c) 2011,2012 Armin Pech, Duesseldorf, Germany.
  *
  *
  * This file is part of RackSummary.
@@ -28,7 +28,7 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Last Update: 2011-10-23
+ * Last Update: 2012-12-13
  *
  * Website: http://projects.arminpech.de/racksummary/
  */
@@ -55,9 +55,9 @@ $rc->add_excel_worksheet('var/example.xls');
 // also applicable:)
 //$rc->add_excel_worksheet(array('Sheet1', 'MyShEEt2'), 'var/example2.xls');
 // set required columns with unit data and activate color processing
-$rc->handle_excel_columns(1, 2, 7, 3, 4, 5, 6)->handle_excel_process_colors(true);
-// $rc->handle_excel_columns(<<name>>, <<rack>>, <<type>>, <<site>>, <<height>>, <<position>>, <<customer>>, <<color>>);
-// select only units which names ends with 'db' -- this (/<<regexp>>/[i]) is handled as a regexp
+$rc->handle_excel_columns(1, 2, 7, 3, 4, 5, 6, 8)->handle_excel_process_colors(true);
+// $rc->handle_excel_columns(<name>, <rack>, <type>, <site>, <height>, <position>, <customer>, <comment>, <color>);
+// select only units which names ends with 'db' -- this (/<regexp>/[i]) is handled as a regexp
 //$rc->handle_excel_name_prefix('/db$/');
 // search case-insensitive with regexp
 //$rc->handle_excel_name_prefix('/.*srv[0-9]*/i');
@@ -110,6 +110,8 @@ $rp->handle_rack_front_identifier('front');
 //$rp->handle_pdf_display_hole_count(false);
 // customize rack hole count interval on rack's right side
 //$rp->handle_hole_count_interval(3);
+// display unit comment
+$rp->handle_pdf_display_unit_comment(true);
 // set last update string
 $rp->handle_pdf_last_update_string('Date of creation');
 // display last update date and time

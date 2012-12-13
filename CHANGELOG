@@ -1,6 +1,6 @@
 CHANGELOG of RackSummary
 ========================
-Last update: 2011-10-23
+Last update: 2012-12-13
 
 
 2011-10-22 armin
@@ -16,3 +16,6 @@ Last update: 2011-10-23
 * Functions of RackPrinter trusts their input any more via Type Casting
 * Documentation and examples of available function of RackPrinter in RackSummary.cli.php
 * Added functions for better customization
+
+2012-12-13 armin
+* Added unit comment data field and printout (feature request of craig)

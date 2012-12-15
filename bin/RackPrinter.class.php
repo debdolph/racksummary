@@ -27,7 +27,7 @@
  *
  *
  * Version: 2012-12-13-alpha
- * Last Update: 2012-12-13
+ * Last Update: 2012-12-15
  *
  * Website: http://projects.arminpech.de/racksummary/
  *
@@ -55,7 +55,7 @@ class RackPrinter extends RackUtils {
 	/*** !!! DO NOT CHANGE THESE CLASS ATTRIBUTES OR FUNCTIONS BELOW !!! ***/
 	/*** program control attributes -- NOT CHANGEABLE ***/
 	// Application version number -- MUST NOT not be set on your own!
-	private $program_version='2011-10-23-alpha';
+	private $program_version='2011-12-13-alpha';
 	// Indicates if you want to get the output automatically.
 	private $program_auto_output=true;
 	// fpdf writer api saving point

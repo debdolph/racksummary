@@ -26,8 +26,8 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 2012-12-13-alpha
- * Last Update: 2012-12-15
+ * Version: 2012-12-16-alpha
+ * Last Update: 2012-12-16
  *
  * Website: http://projects.arminpech.de/racksummary/
  *
@@ -46,6 +46,10 @@ set_include_path('..'.PATH_SEPARATOR.get_include_path());
 // load global used util functions
 require_once('RackUtils.class.php');
 
+// set font path
+// TODO: set multiple pathes in FPDF_FONTPATH
+//define('FPDF_FONTPATH','~/.fonts:/usr/share/fonts:./fpdf/font');
+
 // load pdf creator api (http://fpdf.org/)
 // License: free / there are no usage restrictions -- great!
 require_once('fpdf/fpdf.php');
@@ -55,7 +59,7 @@ class RackPrinter extends RackUtils {
 	/*** !!! DO NOT CHANGE THESE CLASS ATTRIBUTES OR FUNCTIONS BELOW !!! ***/
 	/*** program control attributes -- NOT CHANGEABLE ***/
 	// Application version number -- MUST NOT not be set on your own!
-	private $program_version='2011-12-13-alpha';
+	private $program_version='2011-12-16-alpha';
 	// Indicates if you want to get the output automatically.
 	private $program_auto_output=true;
 	// fpdf writer api saving point
@@ -89,7 +93,7 @@ class RackPrinter extends RackUtils {
 	private $rack_name=null;
 	// Description of rack
 	private $rack_description=null;
-	// value in HE or BE
+	// height of rack in HE or BE value (see above)
 	private $rack_height=null;
 	// rack height text
 	private $rack_height_description='rack units';
@@ -130,10 +134,22 @@ class RackPrinter extends RackUtils {
 	private $pdf_font_family='Arial';
 	// default font size
 	private $pdf_font_size=12;
+	private $pdf_last_font_size=12;
+	// rack and text output relations
+	private $pdf_rack_width_percent=50;
+	private $pdf_rack_description_width_percent=15;
 	// attribute for scaling racks and units from inch to mm
 	private $pdf_rack_scalar=1;
-	// fixed width for unit description -- numeric value means percent
+	// dynamic calculated width for unit description
 	private $pdf_rack_description_width=null;
+	// dynamic calculated width for unit comment
+	private $pdf_rack_comment_width=null;
+	// overall font size for rack description
+	private $pdf_rack_description_general_font_size=null;
+	// separation of rack sides
+	private $pdf_rack_side_separation_width=0.8;
+	// display separation lines of rack
+	private $pdf_display_rack_side_separation=false;
 	// status attribute for displaying hole count or not
 	private $pdf_display_hole_count=true;
 	// hole count interval for rack sides
@@ -250,6 +266,21 @@ class RackPrinter extends RackUtils {
 	// *get* scaling for pt to mm
 	public function handle_pt_mm() {
 		return $this->program_pt_mm;
+	}
+
+	// scale font size of a string to a set width (in mm)
+	public function get_scale_font_size($text, $width_mm, $wished_size) {
+		if(!$text || $width_mm<=0 || $wished_size<=0) {
+			return 0;
+		}
+		$this->handle_pdf_font_size($wished_size);
+		$width_text=$this->writer()->GetStringWidth($text);
+		$fs=$this->writer()->FontSizePt;
+		$this->reset_pdf_font_size();
+		if($width_text>$width_mm) {
+			return $this->writer()->FontSizePt*($width_mm/$width_text);
+		}
+		return $wished_size;
 	}
 
 
@@ -502,12 +533,19 @@ class RackPrinter extends RackUtils {
 		if($value!==null) {
 			$value=(double)$value;
 			if($value<$this->program_min_font_size) {
-				$this->err_exit(39, 'please use a font size double value greater than '.$this->program_min_font_size);
+				$this->err_exit(39, 'please use a font size greater than '.$this->program_min_font_size);
 			}
+			$this->last_pdf_font_size=$this->pdf_font_size;
 			$this->pdf_font_size=$value;
 			return $this;
 		}
 		return $this->pdf_font_size;
+	}
+
+	// reset font size to last state
+	public function reset_pdf_font_size() {
+		$this->pdf_font_size=$this->last_pdf_font_size;
+		return $this;
 	}
 
 	// scaling unit to compute rack printing
@@ -523,7 +561,64 @@ class RackPrinter extends RackUtils {
 		return $this->pdf_rack_scalar;
 	}
 
-	public function handle_pdf_rack_description_width($value=null) {
+	// separation width between rack sides
+	public function handle_pdf_rack_side_separation_width($value=null) {
+		if($value!==null) {
+			$value=(int)$value;
+			if($value<0) {
+				$this->err_exit(0, '');
+			}
+			$this->pdf_rack_side_separation_width=$value;
+			return $this;
+		}
+		return $this->pdf_rack_side_separation_width;
+	}
+
+	public function handle_pdf_display_rack_side_separation($value=null) {
+		if($value!==null) {
+			$value=(boolean)$value;
+			if($value===true) {
+				$this->pdf_display_rack_side_separation=true;
+			}
+			else {
+				$this->pdf_display_rack_side_separation=false;
+			}
+			return $this;
+		}
+		return $this->pdf_display_rack_side_separation;
+	}
+
+	public function handle_pdf_rack_min_width_percent($value=null) {
+		if($value!==null) {
+			$value=(double)$value;
+			if(!$value) {
+				$this->err_exit(0, '');
+			}
+			if($value+$this->handle_pdf_rack_description_max_width_percent()>100) {
+				$this->err_exit(0, '');
+			}
+			$this->pdf_rack_width_percent=$value;
+			return $this;
+		}
+		return $this->pdf_rack_width_percent;
+	}
+
+	public function handle_pdf_rack_description_max_width_percent($value=null) {
+		if($value!==null) {
+			$value=(double)$value;
+			if(!$value) {
+				$this->err_exit(0, '');
+			}
+			if($value+$this->handle_pdf_rack_min_width_percent()>100) {
+				$this->err_exit(0, '');
+			}
+			$this->pdf_rack_description_width_percent=$value;
+			return $this;
+		}
+		return $this->pdf_rack_description_width_percent;
+	}
+
+	private function handle_pdf_rack_description_width($value=null) {
 		if($value!==null) {
 			$value=(double)$value;
 			if(!$value>0) {
@@ -533,6 +628,18 @@ class RackPrinter extends RackUtils {
 			return $this;
 		}
 		return $this->pdf_rack_description_width;
+	}
+
+	private function handle_pdf_rack_comment_width($value=null) {
+		if($value!==null) {
+			$value=(double)$value;
+			if(!$value>0) {
+				$this->err_exit(0, '');
+			}
+			$this->pdf_rack_comment_width=$value;
+			return $this;
+		}
+		return $this->pdf_rack_comment_width;
 	}
 
 	public function handle_pdf_display_hole_count($value=null) {
@@ -760,8 +867,9 @@ class RackPrinter extends RackUtils {
 *$this->handle_pdf_rack_scalar()+0.1;
 		$unit_height=$this->parse_height($unit->handle_height())*0.58*$this->handle_pdf_rack_scalar();
 		$unit_width=$this->handle_rack_width()*$this->handle_pdf_rack_scalar()-0.26;
-		$unit_rack_width=($this->handle_rack_width()+0.58*2)*$this->handle_pdf_rack_scalar();
-		// prepare pdf writer
+		$rack_width_mm=($this->handle_rack_width()+0.58*2)*$this->handle_pdf_rack_scalar();
+
+		// prepare pdf writer - set line width and background color for rectangle
 		$this->writer()->SetLineWidth(0.14);
 		$this->writer()->SetDrawColor(0);
 		if($unit->handle_color_red()!==null) {
@@ -776,13 +884,14 @@ class RackPrinter extends RackUtils {
 			$this->writer()->SetFillColor(220);
 		}
 		// print unit name
-		$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->handle_pdf_rack_scalar()*3.1);
-		$this->writer()->Text($rack_margin_left-$this->writer()->GetStringWidth($unit->handle_name())-1.3, $unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2, $unit->handle_name());
+		$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->get_scale_font_size($unit->handle_name(), $this->handle_pdf_rack_description_width(), $this->handle_pdf_rack_scalar()*3.1));
+		#$this->writer()->Text($rack_margin_left-$this->writer()->GetStringWidth($unit->handle_name())-1.3, $unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2, $unit->handle_name());
+		$this->writer()->Text($rack_margin_left-$this->writer()->GetStringWidth($unit->handle_name()), $unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2, $unit->handle_name());
 
 		// print unit to rack
 		$this->writer()->Rect($unit_position_left, $unit_position_top, $unit_width+0.014*$this->handle_pdf_rack_scalar(), $unit_height, 'F');
-		$this->writer()->Line($rack_margin_left, $unit_position_top, $rack_margin_left+$unit_rack_width, $unit_position_top);
-		$this->writer()->Line($rack_margin_left, $unit_position_top+$unit_height, $rack_margin_left+$unit_rack_width, $unit_position_top+$unit_height);
+		$this->writer()->Line($rack_margin_left, $unit_position_top, $rack_margin_left+$rack_width_mm, $unit_position_top);
+		$this->writer()->Line($rack_margin_left, $unit_position_top+$unit_height, $rack_margin_left+$rack_width_mm, $unit_position_top+$unit_height);
 
 		// Optional unit decoration
 		if($this->module('RackCoverPrinter')->handle_activation()===true) {
@@ -791,9 +900,13 @@ class RackPrinter extends RackUtils {
 
 		// Add unit comment
 		if($this->handle_pdf_display_unit_comment()) {
-			$this->writer()->SetFont($this->handle_pdf_font_family(), 'I', $this->handle_pdf_rack_scalar()*3.1);
-			$this->writer()->Text($rack_margin_left+$unit_rack_width+0.5+$this->writer()->GetStringWidth('000')+0.5, $unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2, $unit->handle_comment());
-			$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->handle_pdf_rack_scalar()*3.1);
+			$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->handle_pdf_rack_scalar()*2);
+			$hole_space=$this->writer()->GetStringWidth('000');
+
+			$font_size_comment=$this->get_scale_font_size($unit->handle_comment(), $this->handle_pdf_rack_comment_width(), $this->handle_pdf_rack_scalar()*3.1);
+			$this->writer()->SetFont($this->handle_pdf_font_family(), 'I', $font_size_comment);
+
+			$this->writer()->Text($rack_margin_left+$rack_width_mm+1.75+$hole_space, $unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2, $unit->handle_comment());
 		}
 
 		return $this;
@@ -802,16 +915,18 @@ class RackPrinter extends RackUtils {
 
 	// print front or back of rack
 	private function print_site($description, $margin_top, $margin_left) {
+		$rack_width_mm=($this->handle_rack_width()+0.58*2)*$this->handle_pdf_rack_scalar();
+
 		// print site description/name
-		$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->handle_pdf_font_size());
+		$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->get_scale_font_size($description, $rack_width_mm, $this->handle_pdf_rack_scalar()*3.1));
 		$this->writer()->SetX($margin_left);
-		$this->writer()->Cell(($this->handle_rack_width()+0.58*2)*$this->handle_pdf_rack_scalar(), 0, $description, 0, 0, 'C');
+		$this->writer()->Cell($rack_width_mm, 0, $description, 0, 0, 'C');
 		// draw rack
 		$this->writer()->SetLineWidth(0.2);
-		$this->writer()->Line($margin_left, $margin_top, $margin_left+($this->handle_rack_width()+0.58*2)*$this->handle_pdf_rack_scalar(), $margin_top);
+		$this->writer()->Line($margin_left, $margin_top, $margin_left+$rack_width_mm, $margin_top);
 		$this->writer()->Line($margin_left, $margin_top, $margin_left, $margin_top+$this->handle_rack_height()*$this->handle_pdf_rack_scalar()*0.58);
 		$this->writer()->Line($margin_left+0.58*$this->handle_pdf_rack_scalar(), $margin_top, $margin_left+0.58*$this->handle_pdf_rack_scalar(), $margin_top+$this->handle_rack_height()*$this->handle_pdf_rack_scalar()*0.58);
-		$this->writer()->Line($margin_left+($this->handle_rack_width()+0.58*2)*$this->handle_pdf_rack_scalar(), $margin_top, $margin_left+($this->handle_rack_width()+0.58*2)*$this->handle_pdf_rack_scalar(), $margin_top+$this->handle_rack_height()*$this->handle_pdf_rack_scalar()*0.58);
+		$this->writer()->Line($margin_left+$rack_width_mm, $margin_top, $margin_left+$rack_width_mm, $margin_top+$this->handle_rack_height()*$this->handle_pdf_rack_scalar()*0.58);
 		$this->writer()->Line($margin_left+($this->handle_rack_width()+0.58)*$this->handle_pdf_rack_scalar(), $margin_top, $margin_left+($this->handle_rack_width()+0.58)*$this->handle_pdf_rack_scalar(), $margin_top+$this->handle_rack_height()*$this->handle_pdf_rack_scalar()*0.58);
 		// prepare environment for drawing holes
 		$margin_top+=$this->handle_pdf_rack_scalar()*0.165;
@@ -827,13 +942,13 @@ class RackPrinter extends RackUtils {
 			$this->writer()->Rect($margin_left+($this->handle_rack_width()+0.745)*$this->handle_pdf_rack_scalar(), $margin_top+$hole_count*0.58*$this->handle_pdf_rack_scalar(), 0.25*$this->handle_pdf_rack_scalar(), 0.25*$this->handle_pdf_rack_scalar(), 'F');
 			// mark hole with number
 			if($this->handle_pdf_display_hole_count() && ($hole_count+1)%$this->handle_hole_count_interval()==0) {
-				$this->writer()->Text($margin_left+($this->handle_rack_width()+0.58*2)*$this->handle_pdf_rack_scalar()+0.75, $margin_top+($hole_count+0.67)*0.58*$this->handle_pdf_rack_scalar(), $hole_count+1);
+				$this->writer()->Text($margin_left+$rack_width_mm+0.75, $margin_top+($hole_count+0.67)*0.58*$this->handle_pdf_rack_scalar(), $hole_count+1);
 			}
 			$hole_count++;
 		}
 		// draw rack base
 		$this->writer()->SetLineWidth(0.2);
-		$this->writer()->Rect($margin_left, $margin_top-0.3+$this->handle_rack_height()*$this->handle_pdf_rack_scalar()*0.58, ($this->handle_rack_width()+0.58*2)*$this->handle_pdf_rack_scalar(), $this->handle_pdf_rack_scalar()*2.2);
+		$this->writer()->Rect($margin_left, $margin_top-0.3+$this->handle_rack_height()*$this->handle_pdf_rack_scalar()*0.58, $rack_width_mm, $this->handle_pdf_rack_scalar()*2.2);
 		// wind back to origin font size
 		$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->handle_pdf_font_size());
 		return $this;
@@ -841,16 +956,18 @@ class RackPrinter extends RackUtils {
 
 	// print rack to PDF
 	public function print_rack() {
-		// set meta data (in UTF8 -- true)
+		// set meta data (true means in UTF8)
 		$this->writer()->SetAuthor($this->handle_pdf_author(), true);
 		$this->writer()->SetTitle($this->handle_pdf_title(), true);
 		$this->writer()->SetSubject($this->handle_pdf_subject(), true);
 		$this->writer()->SetCreator($this->handle_pdf_creator(), true);
 		$this->writer()->SetKeywords($this->handle_pdf_keywords(), true);
+
 		// prepare page
 		$this->writer()->SetMargins($this->handle_pdf_margins(), $this->handle_pdf_margins());
 		$this->writer()->SetFont($this->handle_pdf_font_family(), 'B', $this->handle_pdf_font_size());
 		$this->writer()->AddPage();
+
 		// print header (name, location, image, etc.)
 		$this->writer()->SetXY($this->handle_pdf_margins(), $this->handle_pdf_margins());
 		$this->writer()->Write(0, $this->handle_rack_name());
@@ -862,6 +979,7 @@ class RackPrinter extends RackUtils {
 			$this->writer()->Write(0, $this->handle_rack_height_description().': '.$this->handle_rack_height()/3);
 		}
 		$this->writer()->Ln($this->handle_pdf_font_size()*0.8);
+
 		// print image
 		if(strlen($this->handle_pdf_header_image())>0) {
 			// php.net: "This function does not require the GD image library." -- yeah :)
@@ -875,6 +993,7 @@ class RackPrinter extends RackUtils {
 			}
 			$this->writer()->Image($this->handle_pdf_header_image(), (int)$this->writer()->CurPageSize[0]-(int)$this->writer()->lMargin-$image_width, $this->handle_pdf_margins()*0.8, $image_width, $image_height);
 		}
+
 		// print last update = today
 		if($this->handle_pdf_display_last_update()) {
 			$last_update='d.m.Y';
@@ -883,35 +1002,66 @@ class RackPrinter extends RackUtils {
 			}
 			$this->writer()->Text((int)$this->writer()->lMargin, (int)$this->writer()->CurPageSize[1]-(int)$this->writer()->tMargin, $this->handle_pdf_last_update_string().': '.date($last_update));
 		}
-		// calculate description width
-		$description_width=0;
-		$longest_string='';
-		// set fixed description width
-		if($this->handle_pdf_rack_description_width()!==null) {
-			$description_width=((int)$this->writer()->CurPageSize[0]-$this->writer()->lMargin*2)*$this->handle_pdf_rack_description_width()/100/2;
-			$description_width=((int)$this->writer()->CurPageSize[0]-$this->writer()->lMargin*2)*$this->handle_pdf_rack_description_width()/100/2;
-		}
-		// calculate dynamic description width (default)
-		else {
-			foreach($this->get_unit() as $unit) {
-				$string_width=(int)$this->writer()->GetStringWidth($unit->handle_name());
-				if($string_width>$description_width) {
-					$description_width=$string_width;
-					$longest_string=$unit->handle_name();
-				}
-			}
-			// straighten the description width with 2eo + 1ei a la 1em
-			$description_width+=$this->writer()->GetStringWidth('OOi');
-			$longest_string.='OOi';
-		}
-		// set rack/unit scalar (inch -> mm)
+
+		// calculate rack width/rack scalar (inch -> mm) before to get height of rack units
 		$rack_inch_scalar=($this->writer()->CurPageSize[1]-$this->handle_pdf_margins()*2-9*$this->handle_pdf_font_size()*$this->handle_pt_mm())/($this->handle_rack_height()+3)*1.72;
+		// TODO: fix rack_scalar_to_percent_relation
+		$rack_scalar_to_percent_relation=$rack_inch_scalar*$this->handle_rack_width()/($this->writer()->CurPageSize[0]-$this->handle_pdf_margins()*2-$this->handle_pdf_rack_side_separation_width())/100*$this->handle_pdf_rack_min_width_percent();
+		if($rack_scalar_to_percent_relation>1) {
+			$rack_inch_scalar/=$rack_scalar_to_percent_relation;
+		}
+		else {
+			//$this->handle_pdf_rack_min_width_percent($this->handle_pdf_rack_min_width_percent()*$rack_scalar_to_percent_relation);
+			true;
+		}
 		$this->handle_pdf_rack_scalar($rack_inch_scalar);
+
+		// calculate description width
+		$longest_string=0;
+		$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->handle_pdf_rack_scalar()*3.1);
+		foreach($this->get_unit() as $unit) {
+			$string_width=$this->writer()->GetStringWidth($unit->handle_name());
+			if($string_width>$longest_string) {
+				$longest_string=$string_width;
+			}
+		}
+		$this->reset_pdf_font_size();
+		$description_width=($this->writer()->CurPageSize[0]-$this->writer()->lMargin*2-$this->handle_pdf_rack_side_separation_width()-0.745*$this->handle_pdf_rack_scalar())*$this->handle_pdf_rack_description_max_width_percent()/100/2;
+
+
+		// get printable width
+		$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->handle_pdf_rack_scalar()*2);
+		$hole_space=$this->writer()->GetStringWidth('000');
+
+		$printable_width=$this->writer()->CurPageSize[0]-$this->writer()->lMargin*2-$this->handle_pdf_rack_side_separation_width()-0.58*2-0.745*$this->handle_pdf_rack_scalar()*2-3.5-$hole_space*2-0.25*$this->handle_pdf_rack_scalar()*4;
+
+		// set description width in mm
+		if($description_width>$longest_string) {
+			$this->handle_pdf_rack_description_max_width_percent($this->handle_pdf_rack_description_max_width_percent()*$longest_string/$description_width);
+		}
+		$this->handle_pdf_rack_description_width($longest_string);
+
+		// set comment width in mm
+		$this->handle_pdf_rack_comment_width($printable_width/2*(100-$this->handle_pdf_rack_description_max_width_percent()-$this->handle_pdf_rack_min_width_percent())/100/2);
+
 		// set rack positions
 		$rack_margin_top=$this->writer()->GetY()+$this->handle_pdf_font_size()/2;
-		$rack_front_margin_left=$this->writer()->lMargin+$description_width-$description_width/2;
-		$rack_back_margin_left=(int)$this->writer()->CurPageSize[0]/2+$description_width-$description_width/2;
-		// print rack sites
+		$rack_front_margin_left=$this->writer()->lMargin+$this->handle_pdf_rack_description_width();
+		$rack_back_margin_left=$this->writer()->CurPageSize[0]/2+$this->handle_pdf_rack_side_separation_width()+$this->handle_pdf_rack_description_width();
+
+		// print rack side separation
+		if($this->handle_pdf_display_rack_side_separation()) {
+			$sep_line_width=0.4; // TODO: move to class attributes & add function
+			$this->writer()->SetLineWidth($sep_line_width);
+			$this->writer()->Line(
+				$this->writer()->CurPageSize[0]/2-$sep_line_width/2,
+				$this->writer()->GetY(),
+				$this->writer()->CurPageSize[0]/2-$sep_line_width/2,
+				$this->writer()->GetY()+$this->handle_pdf_font_size()/2+$this->handle_rack_height()*$this->handle_pdf_rack_scalar()*0.58+$this->handle_pdf_rack_scalar()*2.2
+			);
+		}
+
+		// print rack sides
 		$this->print_site($this->handle_rack_front_description(), $rack_margin_top, $rack_front_margin_left);
 		$this->print_site($this->handle_rack_back_description(), $rack_margin_top, $rack_back_margin_left);
 		// now print the units...

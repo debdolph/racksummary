@@ -104,14 +104,23 @@ $rp->handle_rack_back_description('back side');
 $rp->handle_rack_front_identifier('front');
 // set rack back site identifier string
 $rp->handle_rack_front_identifier('front');
-// set fixed unit description width in per cent (not recommended)
-//$rp->handle_pdf_rack_description_width(30);
+// set fixed unit description width in per cent
+//$rp->handle_pdf_rack_description_max_width_percent(30);
+$rp->handle_pdf_rack_description_max_width_percent(15);
+// set minimum width in per cent for rack
+$rp->handle_pdf_rack_min_width_percent(50);
+//$rp->handle_pdf_rack_min_width_percent(30);
 // hide hole count on right rack side
 //$rp->handle_pdf_display_hole_count(false);
 // customize rack hole count interval on rack's right side
 //$rp->handle_hole_count_interval(3);
+$rp->handle_hole_count_interval(3);
 // display unit comment
 $rp->handle_pdf_display_unit_comment(true);
+// display separation lines of rack
+$rp->handle_pdf_display_rack_side_separation(true);
+// separation line of rack sides in mm
+$rp->handle_pdf_rack_side_separation_width(0.6);
 // set last update string
 $rp->handle_pdf_last_update_string('Date of creation');
 // display last update date and time

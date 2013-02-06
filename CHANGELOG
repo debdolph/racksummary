@@ -1,9 +1,12 @@
 CHANGELOG of RackSummary
 ========================
-Last update: 2012-12-13
+Last update: 2013-02-06
 
 
-2011-10-22 armin
+2013-02-06 armin
+* Added output function for unit comments
+
+2012-10-22 armin
 * Improvement rack scaling algorithm
 * Bugfixes of some printing functions and pdf output controll functions
 * Upgrade usage of FPDF from version 1.6 to 1.7 and adjustment to new version and internal variables

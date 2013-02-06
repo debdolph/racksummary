@@ -26,18 +26,15 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 2012-12-16-alpha
- * Last Update: 2012-12-16
+ * Version: 2013-02-06-alpha
+ * Last Update: 2013-02-06
  *
  * Website: http://projects.arminpech.de/racksummary/
  *
  *
- * TODO1: tune algorithm for scaling racks with wide unit descriptions
- *         run over all unit names and comments to get the longest one
- *         and calculate all rows dynamically with percent option for
- *         rack width
- * TODO2: write unit overlapping detection function
- * TODO3: check if font family is available
+ * TODO:
+ * # write unit overlapping detection function
+ * # check if font family is available
  */
 
 // set include path to applications base dir, means ../
@@ -59,7 +56,7 @@ class RackPrinter extends RackUtils {
 	/*** !!! DO NOT CHANGE THESE CLASS ATTRIBUTES OR FUNCTIONS BELOW !!! ***/
 	/*** program control attributes -- NOT CHANGEABLE ***/
 	// Application version number -- MUST NOT not be set on your own!
-	private $program_version='2011-12-16-alpha';
+	private $program_version='2013-02-06-alpha';
 	// Indicates if you want to get the output automatically.
 	private $program_auto_output=true;
 	// fpdf writer api saving point
@@ -884,9 +881,9 @@ class RackPrinter extends RackUtils {
 			$this->writer()->SetFillColor(220);
 		}
 		// print unit name
-		$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->get_scale_font_size($unit->handle_name(), $this->handle_pdf_rack_description_width(), $this->handle_pdf_rack_scalar()*3.1));
-		#$this->writer()->Text($rack_margin_left-$this->writer()->GetStringWidth($unit->handle_name())-1.3, $unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2, $unit->handle_name());
-		$this->writer()->Text($rack_margin_left-$this->writer()->GetStringWidth($unit->handle_name()), $unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2, $unit->handle_name());
+		$font_size_unit_name=$this->get_scale_font_size($unit->handle_name()." ", $this->handle_pdf_rack_description_width(), $this->handle_pdf_rack_scalar()*3.1);
+		$this->writer()->SetFont($this->handle_pdf_font_family(), '', $font_size_unit_name);
+		$this->writer()->Text($rack_margin_left-$this->writer()->GetStringWidth($unit->handle_name()." "), $unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2, $unit->handle_name());
 
 		// print unit to rack
 		$this->writer()->Rect($unit_position_left, $unit_position_top, $unit_width+0.014*$this->handle_pdf_rack_scalar(), $unit_height, 'F');
@@ -904,9 +901,17 @@ class RackPrinter extends RackUtils {
 			$hole_space=$this->writer()->GetStringWidth('000');
 
 			$font_size_comment=$this->get_scale_font_size($unit->handle_comment(), $this->handle_pdf_rack_comment_width(), $this->handle_pdf_rack_scalar()*3.1);
-			$this->writer()->SetFont($this->handle_pdf_font_family(), 'I', $font_size_comment);
+			// TODO: move status value to check font_size_comment against to class attributes
+			if($unit->handle_height()>3 && $font_size_comment<$font_size_unit_name || $font_size_comment<5.5) {
+				$unit_comment_start=$unit_position_top+$this->handle_pdf_rack_scalar()*0.352*2;
+				// TODO: split comment in subsets of equal lengths by number of unit height divided through 2
+			}
+			else {
+				$unit_comment_start=$unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2;
+			}
 
-			$this->writer()->Text($rack_margin_left+$rack_width_mm+1.75+$hole_space, $unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2, $unit->handle_comment());
+			$this->writer()->SetFont($this->handle_pdf_font_family(), 'I', $font_size_comment);
+			$this->writer()->Text($rack_margin_left+$rack_width_mm+1.75+$hole_space, $unit_comment_start, $unit->handle_comment());
 		}
 
 		return $this;
@@ -1020,13 +1025,13 @@ class RackPrinter extends RackUtils {
 		$longest_string=0;
 		$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->handle_pdf_rack_scalar()*3.1);
 		foreach($this->get_unit() as $unit) {
-			$string_width=$this->writer()->GetStringWidth($unit->handle_name());
+			$string_width=$this->writer()->GetStringWidth($unit->handle_name()." ");
 			if($string_width>$longest_string) {
 				$longest_string=$string_width;
 			}
 		}
 		$this->reset_pdf_font_size();
-		$description_width=($this->writer()->CurPageSize[0]-$this->writer()->lMargin*2-$this->handle_pdf_rack_side_separation_width()-0.745*$this->handle_pdf_rack_scalar())*$this->handle_pdf_rack_description_max_width_percent()/100/2;
+		$description_width=($this->writer()->CurPageSize[0]-$this->writer()->lMargin*2-1.3*2-$this->handle_pdf_rack_side_separation_width()-0.745*$this->handle_pdf_rack_scalar())*$this->handle_pdf_rack_description_max_width_percent()/100/2;
 
 
 		// get printable width
@@ -1034,6 +1039,7 @@ class RackPrinter extends RackUtils {
 		$hole_space=$this->writer()->GetStringWidth('000');
 
 		$printable_width=$this->writer()->CurPageSize[0]-$this->writer()->lMargin*2-$this->handle_pdf_rack_side_separation_width()-0.58*2-0.745*$this->handle_pdf_rack_scalar()*2-3.5-$hole_space*2-0.25*$this->handle_pdf_rack_scalar()*4;
+		//$printable_width=$this->writer()->CurPageSize[0]-$this->writer()->lMargin*2-$this->handle_pdf_rack_side_separation_width()-0.745*$this->handle_pdf_rack_scalar()*2-3.5-$hole_space*2-0.25*$this->handle_pdf_rack_scalar()*4;
 
 		// set description width in mm
 		if($description_width>$longest_string) {
@@ -1042,21 +1048,21 @@ class RackPrinter extends RackUtils {
 		$this->handle_pdf_rack_description_width($longest_string);
 
 		// set comment width in mm
-		$this->handle_pdf_rack_comment_width($printable_width/2*(100-$this->handle_pdf_rack_description_max_width_percent()-$this->handle_pdf_rack_min_width_percent())/100/2);
+		$this->handle_pdf_rack_comment_width($printable_width/2-$this->handle_pdf_rack_description_width()-($this->handle_rack_width()+0.58*2)*$this->handle_pdf_rack_scalar());
 
 		// set rack positions
 		$rack_margin_top=$this->writer()->GetY()+$this->handle_pdf_font_size()/2;
 		$rack_front_margin_left=$this->writer()->lMargin+$this->handle_pdf_rack_description_width();
-		$rack_back_margin_left=$this->writer()->CurPageSize[0]/2+$this->handle_pdf_rack_side_separation_width()+$this->handle_pdf_rack_description_width();
+		$rack_back_margin_left=$this->writer()->CurPageSize[0]/2+$this->handle_pdf_rack_side_separation_width()/2+$this->handle_pdf_rack_description_width();
 
 		// print rack side separation
 		if($this->handle_pdf_display_rack_side_separation()) {
 			$sep_line_width=0.4; // TODO: move to class attributes & add function
 			$this->writer()->SetLineWidth($sep_line_width);
 			$this->writer()->Line(
-				$this->writer()->CurPageSize[0]/2-$sep_line_width/2,
+				($this->writer()->CurPageSize[0]+$this->handle_pdf_rack_side_separation_width())/2-$sep_line_width/2,
 				$this->writer()->GetY(),
-				$this->writer()->CurPageSize[0]/2-$sep_line_width/2,
+				($this->writer()->CurPageSize[0]+$this->handle_pdf_rack_side_separation_width())/2-$sep_line_width/2,
 				$this->writer()->GetY()+$this->handle_pdf_font_size()/2+$this->handle_rack_height()*$this->handle_pdf_rack_scalar()*0.58+$this->handle_pdf_rack_scalar()*2.2
 			);
 		}
@@ -1064,7 +1070,9 @@ class RackPrinter extends RackUtils {
 		// print rack sides
 		$this->print_site($this->handle_rack_front_description(), $rack_margin_top, $rack_front_margin_left);
 		$this->print_site($this->handle_rack_back_description(), $rack_margin_top, $rack_back_margin_left);
+
 		// now print the units...
+		$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->handle_pdf_rack_scalar()*3.1);
 		foreach($this->get_unit() as $unit) {
 			// of front site
 			if($unit->handle_site()==$this->handle_rack_front_identifier()) {

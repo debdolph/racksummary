@@ -93,7 +93,8 @@ $rp->handle_rack_height('47he');
 // set header height description
 $rp->handle_rack_height_description('rack units');
 // set rack width in inch
-$rp->handle_rack_width(19);
+//$rp->handle_rack_width(19);
+$rp->handle_rack_width(15);
 // set default height mounts for normal integer values from data source without units
 //$rp->handle_default_unit_height_mounts(1);
 // set description of rack front

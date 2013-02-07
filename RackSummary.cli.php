@@ -104,7 +104,7 @@ $rp->handle_rack_back_description('back side');
 // set rack front site identifier string
 $rp->handle_rack_front_identifier('front');
 // set rack back site identifier string
-$rp->handle_rack_front_identifier('front');
+$rp->handle_rack_back_identifier('back');
 // set fixed unit description width in per cent
 //$rp->handle_pdf_rack_description_max_width_percent(30);
 $rp->handle_pdf_rack_description_max_width_percent(15);

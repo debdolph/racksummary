@@ -1,7 +1,10 @@
 CHANGELOG of RackSummary
 ========================
-Last update: 2013-02-06
+Last update: 2013-02-07
 
+
+2013-02-07 armin
+* Added multi-line comment support for long strings
 
 2013-02-06 armin
 * Added output function for unit comments

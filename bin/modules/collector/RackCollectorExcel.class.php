@@ -79,7 +79,7 @@ class RackCollectorExcel extends RackUtils implements RackCollectorProviderInter
 
 	private function add_excel_file($file=null) {
 		if(!$this->get_excel_file($file)) {
-			$handler=new Spreadsheet_Excel_Reader($this->handle_file($file));
+			$handler=@new Spreadsheet_Excel_Reader($this->handle_file($file));
 			if(!$handler instanceof Spreadsheet_Excel_Reader) {
 				$this->err_exit(120, 'excel reader api "Spreadsheet_Excel_Reader" could not be loaded');
 			}

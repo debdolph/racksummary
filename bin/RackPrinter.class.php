@@ -26,8 +26,8 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 2013-02-07-alpha
- * Last Update: 2013-02-07
+ * Version: 2013-02-09-alpha
+ * Last Update: 2013-02-09
  *
  * Website: https://github.com/pecharmin/racksummary
  *
@@ -57,7 +57,7 @@ class RackPrinter extends RackUtils {
 	/*** !!! DO NOT CHANGE THESE CLASS ATTRIBUTES OR FUNCTIONS BELOW !!! ***/
 	/*** program control attributes -- NOT CHANGEABLE ***/
 	// Application version number -- MUST NOT not be set on your own!
-	private $program_version='2013-02-07-alpha';
+	private $program_version='2013-02-09-alpha';
 	// Indicates if you want to get the output automatically.
 	private $program_auto_output=true;
 	// fpdf writer api saving point
@@ -246,7 +246,10 @@ class RackPrinter extends RackUtils {
 		$height=explode(' ', preg_replace('/^([0-9]*)'.$this->program_regexp_height_types.'/', '$1 $2', str_replace(' ', '', $height)));
 		// is height type available?
 		if(!isset($height[1]) || !isset($this->program_available_height_types[strtolower($height[1])])) {
-			$this->err_exit(22, 'extracted height type is not available');
+			if(!isset($height[1])) {
+				$height[1]="";
+			}
+			$this->err_exit(22, 'extracted height type "' . $height[1] . '" is not available');
 		}
 		// calculate height in BE
 		$height=(int)$height[0]*$this->program_available_height_types[strtolower($height[1])];
@@ -267,18 +270,26 @@ class RackPrinter extends RackUtils {
 	}
 
 	// scale font size of a string to a set width (in mm)
-	public function get_scale_font_size($text, $width_mm, $wished_size) {
-		if(!$text || $width_mm<=0 || $wished_size<=0) {
+	public function get_scale_font_size($text="", $width_mm=0, $wished_font_size=0) {
+		if(!strlen($text)>0 || $width_mm<=0 || $wished_font_size<=0) {
 			return 0;
 		}
-		$this->handle_pdf_font_size($wished_size);
+		$fs_before=$this->writer()->FontSizePt;
+		$ff_before=$this->writer()->FontFamily;
+		$fy_before=$this->writer()->FontStyle;
+
+		$this->writer()->SetFont($ff_before, $fy_before, $wished_font_size);
 		$width_text=$this->writer()->GetStringWidth($text);
 		$fs=$this->writer()->FontSizePt;
-		$this->reset_pdf_font_size();
+		$this->writer()->SetFont($ff_before, $fy_before, $fs_before);
+
 		if($width_text>$width_mm) {
-			return $this->writer()->FontSizePt*($width_mm/$width_text);
+			return $fs*($width_mm/$width_text);
 		}
-		return $wished_size;
+		if($fs>$wished_font_size) {
+			return $wished_font_size;
+		}
+		return $fs;
 	}
 
 
@@ -861,8 +872,7 @@ class RackPrinter extends RackUtils {
 	private function print_unit($rack_margin_top, $rack_margin_left, $unit) {
 		// prepare static values
 		$unit_position_top=$rack_margin_top+($unit->handle_position()-1)*0.58*$this->handle_pdf_rack_scalar();
-		$unit_position_left=$rack_margin_left+0.5851
-*$this->handle_pdf_rack_scalar()+0.1;
+		$unit_position_left=$rack_margin_left+0.5851*$this->handle_pdf_rack_scalar()+0.1;
 		$unit_height=$this->parse_height($unit->handle_height())*0.58*$this->handle_pdf_rack_scalar();
 		$unit_width=$this->handle_rack_width()*$this->handle_pdf_rack_scalar()-0.26;
 		$rack_width_mm=($this->handle_rack_width()+0.58*2)*$this->handle_pdf_rack_scalar();
@@ -898,17 +908,30 @@ class RackPrinter extends RackUtils {
 
 		// Add unit comment
 		if($this->handle_pdf_display_unit_comment() && strlen($unit->handle_comment())>0) {
+			// Get width of hole counts
 			$this->writer()->SetFont($this->handle_pdf_font_family(), '', $this->handle_pdf_rack_scalar()*2);
 			$hole_space=$this->writer()->GetStringWidth('000');
 
+			// Set comment font size to prefered size of unit name
+			$this->writer()->SetFont($this->handle_pdf_font_family(), '', $font_size_unit_name);
+			// Get scaled font size for whole online comment to comment width
 			$font_size_comment=$this->get_scale_font_size($unit->handle_comment(), $this->handle_pdf_rack_comment_width(), $this->handle_pdf_rack_scalar()*3.1);
+			$this->writer()->SetFont($this->handle_pdf_font_family(), '', $font_size_comment);
+
 			// TODO: move status value to check font_size_comment against to class attributes
-			if($unit->handle_height()>3 && $font_size_comment<$font_size_unit_name || $font_size_comment<5.5) {
+			// Check if unit comment must&can be split into multiple lines
+			if($font_size_comment<$font_size_unit_name || $this->writer()->GetStringWidth($unit->handle_comment())>$this->handle_pdf_rack_comment_width() || $font_size_comment<5.5) {
+				// Get count of possible comment lines
 				$comment_line_count=intval($this->parse_height($unit->handle_height())/2);
+				if($comment_line_count<2) {
+					$comment_line_count=2;
+				}
+				// Prepare comment sting for splitting
 				$comment_width=strlen($unit->handle_comment());
 				$comment_array=explode(" ", $unit->handle_comment());
 
-				// split comment string into multiple lines of most equal length
+				// TODO: handle comment string without whitespaces
+				// split comment string into multiple lines on whitespaces of most equal length
 				$output_array=array();
 				$ci=0;
 				$output_array[0]=$comment_array[0];
@@ -931,22 +954,29 @@ class RackPrinter extends RackUtils {
 					}
 				}
 
-				$unit_comment=implode("\n", $output_array);
-
+				// Scale font size of comment lines for longest comment string, if height of comment lines are lower unit height
 				$font_size_comment=$this->get_scale_font_size($longest_comment_string, $this->handle_pdf_rack_comment_width(), $this->handle_pdf_rack_scalar()*3.1);
+				$comment_height=(count($output_array)*$font_size_comment+$this->handle_pdf_rack_scalar()*0.352)*$this->handle_pt_mm();
+				if($comment_height>$unit_height) {
+					$font_size_comment=$this->get_scale_font_size($longest_comment_string, $this->handle_pdf_rack_comment_width(), $font_size_comment*$unit_height/$comment_height);
+				}
 
+				// Set options for comment output
 				$this->writer()->SetFont($this->handle_pdf_font_family(), 'I', $font_size_comment);
-				$unit_comment_start=$unit_position_top+$this->handle_pdf_rack_scalar()*0.352+($unit_height-count($output_array)*$this->writer()->FontSize)/2;
+				$unit_comment_start=$unit_position_top+$this->handle_pdf_rack_scalar()*0.352+($unit_height-(count($output_array)-1)*$this->writer()->FontSize)/2;
 
+				// Print comment lines to output
 				foreach($output_array as $comment) {
 					$this->writer()->Text($rack_margin_left+$rack_width_mm+1.75+$hole_space, $unit_comment_start, $comment);
 					$unit_comment_start+=$this->writer()->FontSize;
 				}
 			}
 			else {
+				// Set options for comment output
 				$unit_comment=$unit->handle_comment();
 				$unit_comment_start=$unit_position_top+$this->handle_pdf_rack_scalar()*0.352+$unit_height/2;
 
+				// Print comment lines to output
 				$this->writer()->SetFont($this->handle_pdf_font_family(), 'I', $font_size_comment);
 				$this->writer()->Text($rack_margin_left+$rack_width_mm+1.75+$hole_space, $unit_comment_start, $unit->handle_comment());
 			}
@@ -1078,7 +1108,6 @@ class RackPrinter extends RackUtils {
 
 		// TODO: check this again
 		$printable_width=$this->writer()->CurPageSize[0]-$this->writer()->lMargin*2-$this->handle_pdf_rack_side_separation_width()-0.58*2-0.745*$this->handle_pdf_rack_scalar()*2-3.5-$hole_space*2-0.25*$this->handle_pdf_rack_scalar()*4;
-		//$printable_width=$this->writer()->CurPageSize[0]-$this->writer()->lMargin*2-$this->handle_pdf_rack_side_separation_width()-0.745*$this->handle_pdf_rack_scalar()*2-3.5-$hole_space*2-0.25*$this->handle_pdf_rack_scalar()*4;
 
 		// set description width in mm
 		if($description_width>$longest_string) {

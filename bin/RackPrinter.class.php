@@ -920,17 +920,28 @@ class RackPrinter extends RackUtils {
 
 			// TODO: move status value to check font_size_comment against to class attributes
 			// Check if unit comment must&can be split into multiple lines
-			if($font_size_comment<$font_size_unit_name || $this->writer()->GetStringWidth($unit->handle_comment())>$this->handle_pdf_rack_comment_width() || $font_size_comment<5.5) {
+			if(	$font_size_comment<$font_size_unit_name ||
+				$this->writer()->GetStringWidth($unit->handle_comment())>$this->handle_pdf_rack_comment_width() ||
+				$font_size_comment<5.5
+			) {
 				// Get count of possible comment lines
 				$comment_line_count=intval($this->parse_height($unit->handle_height())/2);
 				if($comment_line_count<2) {
 					$comment_line_count=2;
 				}
-				// Prepare comment sting for splitting
-				$comment_width=strlen($unit->handle_comment());
-				$comment_array=explode(" ", $unit->handle_comment());
 
-				// TODO: handle comment string without whitespaces
+				// Prepare comment sting for splitting
+				$unit_comment=$unit->handle_comment();
+				$comment_width=strlen($unit_comment);
+
+				// handle comment string without whitespaces
+				if(!strstr($unit_comment, ' ')) {
+					$comment_array=str_split($unit_comment, ceil($comment_width/$comment_line_count));
+				}
+				else {
+					$comment_array=explode(" ", $unit_comment);
+				}
+
 				// split comment string into multiple lines on whitespaces of most equal length
 				$output_array=array();
 				$ci=0;

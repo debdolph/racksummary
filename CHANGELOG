@@ -6,6 +6,7 @@ Last update: 2013-02-09
 2013-02-09 armin
 * Fixed scaling of unit comment font size
 * Suppress error messages of php-excel-reader
+* Added split support for long unit comments without whitespaces
 
 2013-02-07 armin
 * Added multi-line comment support for long strings

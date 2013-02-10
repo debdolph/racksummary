@@ -5,6 +5,8 @@ Last update: 2013-02-10
 
 2013-02-10 armin
 * Added public function to handle rack side separation line width
+* Fixed calculation of rack side separation
+* Added public function to handle minumum comment font size
 
 2013-02-09 armin
 * Fixed scaling of unit comment font size

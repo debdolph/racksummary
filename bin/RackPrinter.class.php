@@ -142,6 +142,8 @@ class RackPrinter extends RackUtils {
 	private $pdf_rack_description_width=null;
 	// dynamic calculated width for unit comment
 	private $pdf_rack_comment_width=null;
+	// minimum font size in pt of rack comment strings
+	private $pdf_rack_comment_min_font_size=5.5;
 	// overall font size for rack description
 	private $pdf_rack_description_general_font_size=null;
 	// display separation lines of rack
@@ -665,6 +667,18 @@ class RackPrinter extends RackUtils {
 		return $this->pdf_rack_comment_width;
 	}
 
+	public function handle_pdf_rack_comment_min_font_size($value=null) {
+		if($value!==null) {
+			$value=(double)$value;
+			if(!$value>0) {
+				$this->err_exit(0, '');
+			}
+			$this->pdf_rack_comment_min_font_size=$value;
+			return $this;
+		}
+		return $this->pdf_rack_comment_min_font_size;
+	}
+
 	public function handle_pdf_display_hole_count($value=null) {
 		if($value!==null) {
 			$value=(boolean)$value;
@@ -932,11 +946,10 @@ class RackPrinter extends RackUtils {
 			$font_size_comment=$this->get_scale_font_size($unit->handle_comment(), $this->handle_pdf_rack_comment_width(), $this->handle_pdf_rack_scalar()*3.1);
 			$this->writer()->SetFont($this->handle_pdf_font_family(), '', $font_size_comment);
 
-			// TODO: move status value to check font_size_comment against to class attributes
 			// Check if unit comment must&can be split into multiple lines
 			if(	$font_size_comment<$font_size_unit_name ||
 				$this->writer()->GetStringWidth($unit->handle_comment())>$this->handle_pdf_rack_comment_width() ||
-				$font_size_comment<5.5
+				$font_size_comment<$this->handle_pdf_rack_comment_min_font_size()
 			) {
 				// Get count of possible comment lines
 				$comment_line_count=intval($this->parse_height($unit->handle_height())/2);

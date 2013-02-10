@@ -601,7 +601,7 @@ class RackPrinter extends RackUtils {
 
 	public function handle_pdf_display_rack_side_separation_line_width($value=null) {
 		if($value!==null) {
-			$value=(int)$value;
+			$value=(double)$value;
 			if($value<0) {
 				$this->err_exit(0, '');
 			}

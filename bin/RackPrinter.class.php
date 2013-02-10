@@ -26,8 +26,8 @@
  * along with RackSummary. If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 2013-02-09-alpha
- * Last Update: 2013-02-09
+ * Version: 2013-02-10-alpha
+ * Last Update: 2013-02-10
  *
  * Website: https://github.com/pecharmin/racksummary
  *
@@ -57,7 +57,7 @@ class RackPrinter extends RackUtils {
 	/*** !!! DO NOT CHANGE THESE CLASS ATTRIBUTES OR FUNCTIONS BELOW !!! ***/
 	/*** program control attributes -- NOT CHANGEABLE ***/
 	// Application version number -- MUST NOT not be set on your own!
-	private $program_version='2013-02-09-alpha';
+	private $program_version='2013-02-10-alpha';
 	// Indicates if you want to get the output automatically.
 	private $program_auto_output=true;
 	// fpdf writer api saving point
@@ -144,10 +144,12 @@ class RackPrinter extends RackUtils {
 	private $pdf_rack_comment_width=null;
 	// overall font size for rack description
 	private $pdf_rack_description_general_font_size=null;
-	// separation of rack sides
-	private $pdf_rack_side_separation_width=0.8;
 	// display separation lines of rack
 	private $pdf_display_rack_side_separation=false;
+	// separation of rack sides
+	private $pdf_display_rack_side_separation_width=0.8;
+	// rack side separation width in mm
+	private $pdf_display_rack_side_sepration_line_width=0.4;
 	// status attribute for displaying hole count or not
 	private $pdf_display_hole_count=true;
 	// hole count interval for rack sides
@@ -571,18 +573,6 @@ class RackPrinter extends RackUtils {
 	}
 
 	// separation width between rack sides
-	public function handle_pdf_rack_side_separation_width($value=null) {
-		if($value!==null) {
-			$value=(int)$value;
-			if($value<0) {
-				$this->err_exit(0, '');
-			}
-			$this->pdf_rack_side_separation_width=$value;
-			return $this;
-		}
-		return $this->pdf_rack_side_separation_width;
-	}
-
 	public function handle_pdf_display_rack_side_separation($value=null) {
 		if($value!==null) {
 			$value=(boolean)$value;
@@ -595,6 +585,30 @@ class RackPrinter extends RackUtils {
 			return $this;
 		}
 		return $this->pdf_display_rack_side_separation;
+	}
+
+	public function handle_pdf_display_rack_side_separation_width($value=null) {
+		if($value!==null) {
+			$value=(int)$value;
+			if($value<0) {
+				$this->err_exit(0, '');
+			}
+			$this->pdf_display_rack_side_separation_width=$value;
+			return $this;
+		}
+		return $this->pdf_display_rack_side_separation_width;
+	}
+
+	public function handle_pdf_display_rack_side_separation_line_width($value=null) {
+		if($value!==null) {
+			$value=(int)$value;
+			if($value<0) {
+				$this->err_exit(0, '');
+			}
+			$this->pdf_display_rack_side_separation_line_width=$value;
+			return $this;
+		}
+		return $this->pdf_display_rack_side_separation_line_width;
 	}
 
 	public function handle_pdf_rack_min_width_percent($value=null) {
@@ -1090,7 +1104,7 @@ class RackPrinter extends RackUtils {
 		// calculate rack width/rack scalar (inch -> mm) before to get height of rack units
 		$rack_inch_scalar=($this->writer()->CurPageSize[1]-$this->handle_pdf_margins()*2-9*$this->handle_pdf_font_size()*$this->handle_pt_mm())/($this->handle_rack_height()+3)*1.72;
 		// TODO: fix rack_scalar_to_percent_relation
-		$rack_scalar_to_percent_relation=$rack_inch_scalar*$this->handle_rack_width()/($this->writer()->CurPageSize[0]-$this->handle_pdf_margins()*2-$this->handle_pdf_rack_side_separation_width())/100*$this->handle_pdf_rack_min_width_percent();
+		$rack_scalar_to_percent_relation=$rack_inch_scalar*$this->handle_rack_width()/($this->writer()->CurPageSize[0]-$this->handle_pdf_margins()*2-$this->handle_pdf_display_rack_side_separation_width())/100*$this->handle_pdf_rack_min_width_percent();
 		if($rack_scalar_to_percent_relation>1) {
 			$rack_inch_scalar/=$rack_scalar_to_percent_relation;
 		}
@@ -1110,7 +1124,7 @@ class RackPrinter extends RackUtils {
 			}
 		}
 		$this->reset_pdf_font_size();
-		$description_width=($this->writer()->CurPageSize[0]-$this->writer()->lMargin*2-1.3*2-$this->handle_pdf_rack_side_separation_width()-0.745*$this->handle_pdf_rack_scalar())*$this->handle_pdf_rack_description_max_width_percent()/100/2;
+		$description_width=($this->writer()->CurPageSize[0]-$this->writer()->lMargin*2-1.3*2-$this->handle_pdf_display_rack_side_separation_width()-0.745*$this->handle_pdf_rack_scalar())*$this->handle_pdf_rack_description_max_width_percent()/100/2;
 
 
 		// get printable width
@@ -1118,7 +1132,7 @@ class RackPrinter extends RackUtils {
 		$hole_space=$this->writer()->GetStringWidth('000');
 
 		// TODO: check this again
-		$printable_width=$this->writer()->CurPageSize[0]-$this->writer()->lMargin*2-$this->handle_pdf_rack_side_separation_width()-0.58*2-0.745*$this->handle_pdf_rack_scalar()*2-3.5-$hole_space*2-0.25*$this->handle_pdf_rack_scalar()*4;
+		$printable_width=$this->writer()->CurPageSize[0]-$this->writer()->lMargin*2-$this->handle_pdf_display_rack_side_separation_width()-0.58*2-0.745*$this->handle_pdf_rack_scalar()*2-3.5-$hole_space*2-0.25*$this->handle_pdf_rack_scalar()*4;
 
 		// set description width in mm
 		if($description_width>$longest_string) {
@@ -1132,16 +1146,16 @@ class RackPrinter extends RackUtils {
 		// set rack positions
 		$rack_margin_top=$this->writer()->GetY()+$this->handle_pdf_font_size()/2;
 		$rack_front_margin_left=$this->writer()->lMargin+$this->handle_pdf_rack_description_width();
-		$rack_back_margin_left=$this->writer()->CurPageSize[0]/2+$this->handle_pdf_rack_side_separation_width()/2+$this->handle_pdf_rack_description_width();
+		$rack_back_margin_left=$this->writer()->CurPageSize[0]/2+$this->handle_pdf_display_rack_side_separation_width()/2+$this->handle_pdf_rack_description_width();
 
 		// print rack side separation
 		if($this->handle_pdf_display_rack_side_separation()) {
 			$sep_line_width=0.4; // TODO: move to class attributes & add function
-			$this->writer()->SetLineWidth($sep_line_width);
+			$this->writer()->SetLineWidth($this->handle_pdf_display_rack_side_separation_line_width());
 			$this->writer()->Line(
-				($this->writer()->CurPageSize[0]+$this->handle_pdf_rack_side_separation_width())/2-$sep_line_width/2,
+				($this->writer()->CurPageSize[0]+$this->handle_pdf_display_rack_side_separation_width())/2-$sep_line_width/2,
 				$this->writer()->GetY(),
-				($this->writer()->CurPageSize[0]+$this->handle_pdf_rack_side_separation_width())/2-$sep_line_width/2,
+				($this->writer()->CurPageSize[0]+$this->handle_pdf_display_rack_side_separation_width())/2-$sep_line_width/2,
 				$this->writer()->GetY()+$this->handle_pdf_font_size()/2+$this->handle_rack_height()*$this->handle_pdf_rack_scalar()*0.58+$this->handle_pdf_rack_scalar()*2.2
 			);
 		}

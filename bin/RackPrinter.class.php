@@ -1146,16 +1146,15 @@ class RackPrinter extends RackUtils {
 		// set rack positions
 		$rack_margin_top=$this->writer()->GetY()+$this->handle_pdf_font_size()/2;
 		$rack_front_margin_left=$this->writer()->lMargin+$this->handle_pdf_rack_description_width();
-		$rack_back_margin_left=$this->writer()->CurPageSize[0]/2+$this->handle_pdf_display_rack_side_separation_width()/2+$this->handle_pdf_rack_description_width();
+		$rack_back_margin_left=$this->writer()->CurPageSize[0]/2+$this->handle_pdf_display_rack_side_separation_width()/2+$this->handle_pdf_display_rack_side_separation_line_width()/2+$this->handle_pdf_rack_description_width();
 
 		// print rack side separation
 		if($this->handle_pdf_display_rack_side_separation()) {
-			$sep_line_width=0.4; // TODO: move to class attributes & add function
 			$this->writer()->SetLineWidth($this->handle_pdf_display_rack_side_separation_line_width());
 			$this->writer()->Line(
-				($this->writer()->CurPageSize[0]+$this->handle_pdf_display_rack_side_separation_width())/2-$sep_line_width/2,
+				$this->writer()->CurPageSize[0]/2-$this->handle_pdf_display_rack_side_separation_line_width()/2,
 				$this->writer()->GetY(),
-				($this->writer()->CurPageSize[0]+$this->handle_pdf_display_rack_side_separation_width())/2-$sep_line_width/2,
+				$this->writer()->CurPageSize[0]/2-$this->handle_pdf_display_rack_side_separation_line_width()/2,
 				$this->writer()->GetY()+$this->handle_pdf_font_size()/2+$this->handle_rack_height()*$this->handle_pdf_rack_scalar()*0.58+$this->handle_pdf_rack_scalar()*2.2
 			);
 		}

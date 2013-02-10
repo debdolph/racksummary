@@ -120,8 +120,10 @@ $rp->handle_hole_count_interval(3);
 $rp->handle_pdf_display_unit_comment(true);
 // display separation lines of rack
 $rp->handle_pdf_display_rack_side_separation(true);
-// separation line of rack sides in mm
-$rp->handle_pdf_rack_side_separation_width(0.6);
+// width of separation space between rack sides in mm
+$rp->handle_pdf_display_rack_side_separation_width(10);
+// width of separation line
+$rp->handle_pdf_display_rack_side_separation_line_width(0.4);
 // set last update string
 $rp->handle_pdf_last_update_string('Date of creation');
 // display last update date and time
